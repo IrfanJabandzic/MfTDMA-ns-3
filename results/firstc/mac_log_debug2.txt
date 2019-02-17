@@ -1,0 +1,34 @@
+Waf: Entering directory `/home/irfan/workspace/bake/source/ns-3.27/build'
+Waf: Leaving directory `/home/irfan/workspace/bake/source/ns-3.27/build'
+Build commands will be stored in build/compile_commands.json
+'build' finished successfully (6.679s)
+Node start at time 2
+Node start at time 3
+Node start at time 3
+Node start at time 2
+Node start at time 4
+2.302: Max slots registered=2
+Slot allocation count=1
+Slot removal count=0
+2.805: Max slots registered=4
+Slot allocation count=2
+Slot removal count=0
+3.307: Max slots registered=6
+Slot allocation count=3
+Slot removal count=0
+3.555: Max slots registered=8
+Slot allocation count=4
+Slot removal count=0
+3.805: Max slots registered=10
+Slot allocation count=5
+Slot removal count=0
+3.839: Max slots registered=12
+Slot allocation count=6
+Slot removal count=0
+5.302: Max slots registered=18
+Slot allocation count=10
+Slot removal count=0
+5.822: Max slots registered=20
+Slot allocation count=10
+Slot removal count=0
+Command ['/home/irfan/workspace/bake/source/ns-3.27/build/scratch/darpa-simulation', '--simulation_id=2', '--number_of_nodes=5', '--number_of_neighbors=5', '--cb_slots_count=4', '--number_of_packets=640000', '--packet_period=1250', '--max_band=80000000'] terminated with signal SIGTERM. Run it under a debugger to get more information (./waf --run <program> --command-template="gdb --args %s <args>").

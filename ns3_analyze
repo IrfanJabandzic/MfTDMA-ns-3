@@ -1,0 +1,146 @@
+#!/bin/bash
+#analyze ns3 script
+
+static_table=0
+
+if [ -d "results" ] 
+then
+	rm -rf results
+echo "Removed"
+fi
+
+mkdir results
+touch mac_log.txt
+
+if [ $# -eq 0 ]
+then
+	number_of_simulations=1
+else
+	number_of_simulations=$1
+fi
+
+final_time=0
+max_slots=0
+slot_allocation=0
+slot_removal=0
+ip_tx=0
+ip_rx=0
+ip_dropped=0
+mac_send_control_count=0
+mac_send_control_no_ack_count=0
+mac_send_control_no_ack_advertise_count=0
+mac_send_data_count=0
+mac_ack_control_count=0
+mac_ack_data_count=0
+mac_drop_count=0
+mac_timeout_drop_count=0
+mac_entered_count=0
+mac_retr_control_packets_count=0
+mac_retr_data_packets_count=0
+channel_send_count=0
+channel_drop_control_count=0
+channel_drop_data_count=0
+channel_interference_control_count=0
+channel_interference_data_count=0
+channel_added_count=0
+
+i=1
+while [ $i -le $number_of_simulations ]
+do
+	printf "Simulation number: $i\n" >> mac_log.txt
+	if [ $static_table -eq 0 ]
+	then
+		tac mac_log$i.txt | awk "!flag; /Max slots registered/ { flag = 1 }; " | tac | grep -v 'Slot\:' >> mac_log.txt
+	else
+		tac mac_log$i.txt | awk "!flag; /Slot:/ { flag = 1 }; " | tac | grep -v 'Slot\:' >> mac_log.txt
+	fi
+	printf "\n" >> mac_log.txt
+
+	grep 'Interference\:' mac_log$i.txt | cut -c14- >> interference$i.data
+	tac mac_log$i.txt | awk "!flag; /Max slots registered/ { flag = 1 }; " | tac | grep 'Slot\:' | awk -F ":" '/Slot/ {print $2}' >> slotsafter$i.data
+	if [ $static_table -eq 0 ] 
+	then
+		line=$(grep -n 'Max\ slots\ registered' mac_log$i.txt | tail -1 | awk -F\: '{print $1}')
+		max_line=$(grep -c ^ mac_log$i.txt)
+		head -n -$(($max_line-$line)) mac_log$i.txt | grep 'Slot\:' | awk -F ":" '/Slot/ {print $2}' >> slotsbefore$i.data
+	else
+		cp slotsafter$i.data slotsbefore$i.data
+	fi
+
+	#Extract stats
+	if [ $static_table -eq 0 ] 
+	then
+		final_time=$(($final_time+$(tac mac_log$i.txt | awk "!flag; /Max slots registered/ { flag = 1 }; " | tac | grep 'Max\ slots\ registered' | awk -F\. '{print $1}')))
+		max_slots=$(($max_slots+$(tac mac_log$i.txt | awk "!flag; /Max slots registered/ { flag = 1 }; " | tac | awk -F "=" '/Max slots registered/ {print $2}')))
+		slot_allocation=$(($slot_allocation+$(tac mac_log$i.txt | awk "!flag; /Slot allocation count/ { flag = 1 }; " | tac | awk -F "=" '/Slot allocation count/ {print $2}')))
+		slot_removal=$(($slot_removal+$(tac mac_log$i.txt | awk "!flag; /Slot removal count/ { flag = 1 }; " | tac | awk -F "=" '/Slot removal count/ {print $2}')))
+	fi
+	ip_tx=$(($ip_tx+$(grep 'IP\ Tx' mac_log$i.txt | awk -F "=" '/IP Tx/ {print $2}')))
+	ip_rx=$(($ip_rx+$(grep 'IP\ Rx' mac_log$i.txt | awk -F "=" '/IP Rx/ {print $2}')))
+	ip_dropped=$(($ip_dropped+$(grep 'IP\ Dropped' mac_log$i.txt | awk -F "=" '/IP Dropped/ {print $2}')))
+	mac_send_control_count=$(($mac_send_control_count+$(grep 'MAC\ Send\ control\ count' mac_log$i.txt | awk -F "=" '/MAC Send control count/ {print $2}')))
+	mac_send_control_no_ack_count=$(($mac_send_control_no_ack_count+$(grep 'MAC\ Send\ control\ no\ ack\ count' mac_log$i.txt | awk -F "=" '/MAC Send control no ack count/ {print $2}')))
+	mac_send_control_no_ack_advertise_count=$(($mac_send_control_no_ack_advertise_count+$(grep 'MAC\ Send\ control\ no\ ack\ advertise\ count' mac_log$i.txt | awk -F "=" '/MAC Send control no ack advertise count/ {print $2}')))
+	mac_send_data_count=$(($mac_send_data_count+$(grep 'MAC\ Send\ data\ count' mac_log$i.txt | awk -F "=" '/MAC Send data count/ {print $2}')))
+	mac_ack_control_count=$(($mac_ack_control_count+$(grep 'MAC\ Ack\ control\ count' mac_log$i.txt | awk -F "=" '/MAC Ack control count/ {print $2}')))
+	mac_ack_data_count=$(($mac_ack_data_count+$(grep 'MAC\ Ack\ data\ count' mac_log$i.txt | awk -F "=" '/MAC Ack data count/ {print $2}')))
+	mac_drop_count=$(($mac_drop_count+$(grep 'MAC\ Drop\ count' mac_log$i.txt | awk -F "=" '/MAC Drop count/ {print $2}')))
+	mac_timeout_drop_count=$(($mac_timeout_drop_count+$(grep 'MAC\ \Timeout Drop\ count' mac_log$i.txt | awk -F "=" '/MAC Timeout Drop count/ {print $2}')))
+	mac_entered_count=$(($mac_entered_count+$(grep 'MAC\ Entered\ count' mac_log$i.txt | awk -F "=" '/MAC Entered count/ {print $2}')))
+	mac_retr_control_packets_count=$(($mac_retr_control_packets_count+$(grep 'MAC\ Retr\.\ control\ packets\ count' mac_log$i.txt | awk -F "=" '/MAC Retr. control packets count/ {print $2}')))
+	mac_retr_data_packets_count=$(($mac_retr_data_packets_count+$(grep 'MAC\ Retr\.\ data\ packets\ count' mac_log$i.txt | awk -F "=" '/MAC Retr. data packets count/ {print $2}')))
+	channel_send_count=$(($channel_send_count+$(grep 'Channel\ Send\ count' mac_log$i.txt | awk -F "=" '/Channel Send count/ {print $2}')))
+	channel_drop_control_count=$(($channel_drop_control_count+$(grep 'Channel\ Drop\ control\ count' mac_log$i.txt | awk -F "=" '/Channel Drop control count/ {print $2}')))
+	channel_drop_data_count=$(($channel_drop_data_count+$(grep 'Channel\ Drop\ data\ count' mac_log$i.txt | awk -F "=" '/Channel Drop data count/ {print $2}')))
+	channel_drop_control_count=$(($channel_drop_control_count+$(grep 'Channel\ Interference\ control\ count' mac_log$i.txt | awk -F "=" '/Channel Interference control count/ {print $2}')))
+	channel_drop_data_count=$(($channel_drop_data_count+$(grep 'Channel\ Interference\ data\ count' mac_log$i.txt | awk -F "=" '/Channel Interference data count/ {print $2}')))
+	channel_added_count=$(($channel_added_count+$(grep 'Channel\ Added\ count' mac_log$i.txt | awk -F "=" '/Channel Added count/ {print $2}')))
+
+	mkdir results/simulation$i
+	mv mac_log$i.txt results/simulation$i
+	mv mac_log_debug$i.txt results/simulation$i
+	mv slots_log$i.txt results/simulation$i
+	mv interference$i.data results/simulation$i
+	mv slotsbefore$i.data results/simulation$i
+	mv slotsafter$i.data results/simulation$i
+	mv rxI$i.data results/simulation$i
+	mv rxII$i.data results/simulation$i
+	mv rxIone$i.data results/simulation$i
+	mv rxIIone$i.data results/simulation$i
+
+	((i++))
+done
+
+((i--))
+
+printf "Number of simulations: $i\n" >> mac_log.txt
+printf "Final time average: $(($final_time/$i)).$(($final_time%$i*100/$i))\n" >> mac_log.txt
+printf "Max slots registered average: $(($max_slots/$i)).$(($max_slots%$i*100/$i))\n" >> mac_log.txt
+printf "Slot allocation count average: $(($slot_allocation/$i)).$(($slot_allocation%$i*100/$i))\n" >> mac_log.txt
+printf "Slot removal count average: $(($slot_removal/$i)).$(($slot_removal%$i*100/$i))\n" >> mac_log.txt
+printf "IP Tx average: $(($ip_tx/$i)).$(($ip_tx%$i*100/$i))\n" >> mac_log.txt
+printf "IP Rx average: $(($ip_rx/$i)).$(($ip_rx%$i*100/$i))\n" >> mac_log.txt
+printf "IP Dropped average: $(($ip_dropped/$i)).$(($ip_dropped%$i*100/$i))\n" >> mac_log.txt
+printf "MAC Send control count average: $(($mac_send_control_count/$i)).$(($mac_send_control_count%$i*100/$i))\n" >> mac_log.txt
+printf "MAC Send control no ack count average: $(($mac_send_control_no_ack_count/$i)).$(($mac_send_control_no_ack_count%$i*100/$i))\n" >> mac_log.txt
+printf "MAC Send control no ack advertise count average: $(($mac_send_control_no_ack_advertise_count/$i)).$(($mac_send_control_no_ack_advertise_count%$i*100/$i))\n" >> mac_log.txt
+printf "MAC Send data count average: $(($mac_send_data_count/$i)).$(($mac_send_data_count%$i*100/$i))\n" >> mac_log.txt
+printf "MAC Ack control count average: $(($mac_ack_control_count/$i)).$(($mac_ack_control_count%$i*100/$i))\n" >> mac_log.txt
+printf "MAC Ack data count average: $(($mac_ack_data_count/$i)).$(($mac_ack_data_count%$i*100/$i))\n" >> mac_log.txt
+printf "MAC Drop count average: $(($mac_drop_count/$i)).$(($mac_drop_count%$i*100/$i))\n" >> mac_log.txt
+printf "MAC Timeout Drop count average: $(($mac_timeout_drop_count/$i)).$(($mac_timeout_drop_count%$i*100/$i))\n" >> mac_log.txt
+printf "MAC Entered count average: $(($mac_entered_count/$i)).$(($mac_entered_count%$i*100/$i))\n" >> mac_log.txt
+printf "MAC Retr. control packets count average: $(($mac_retr_control_packets_count/$i)).$(($mac_retr_control_packets_count%$i*100/$i))\n" >> mac_log.txt
+printf "MAC Retr. data packets count average: $(($mac_retr_data_packets_count/$i)).$(($mac_retr_data_packets_count%$i*100/$i))\n" >> mac_log.txt
+printf "Channel Send count average: $(($channel_send_count/$i)).$(($channel_send_count%$i*100/$i))\n" >> mac_log.txt
+printf "Channel Drop control count average: $(($channel_drop_control_count/$i)).$(($channel_drop_control_count%$i*100/$i))\n" >> mac_log.txt
+printf "Channel Drop data count average: $(($channel_drop_data_count/$i)).$(($channel_drop_data_count%$i*100/$i))\n" >> mac_log.txt
+printf "Channel Interference control count average: $(($channel_interference_control_count/$i)).$(($channel_interference_control_count%$i*100/$i))\n" >> mac_log.txt
+printf "Channel Interference data count average: $(($channel_interference_data_count/$i)).$(($channel_interference_data_count%$i*100/$i))\n" >> mac_log.txt
+printf "Channel Added count average: $(($channel_added_count/$i)).$(($channel_added_count%$i*100/$i))\n" >> mac_log.txt
+
+sed -i '/Dispose/d' mac_log.txt
+mv mac_log.txt results
+
+echo "Parsing done!"
+

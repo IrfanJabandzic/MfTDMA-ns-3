@@ -1,0 +1,40 @@
+#!/bin/bash
+#install ns3 script
+#working on Ubuntu 16.04
+
+mpi=0
+
+sudo apt-get update
+sudo apt-get install gcc g++ python python-dev
+sudo apt-get install mercurial python-setuptools valgrind
+
+if [ $mpi -eq 1 ] 
+then
+	sudo apt-get install openmpi-bin openmpi-common openmpi-doc libopenmpi-dev
+fi
+
+mkdir ns3
+cd ns3
+hg clone http://code.nsnam.org/bake
+cd bake
+export BAKE_HOME=`pwd`
+export PATH=$PATH:$BAKE_HOME:$BAKE_HOME/build/bin
+export PYTHONPATH=$PYTHONPATH:$BAKE_HOME:$BAKE_HOME/build/lib
+./bake.py configure -e ns-3.27
+./bake.py check
+echo 'Downloading NS3, please wait!'
+./bake.py download
+echo 'Building NS3, please wait!'
+./bake.py build
+cd source/ns-3.27
+echo 'Configuring NS3, please wait!'
+
+if [ $mpi -eq 1 ]
+then 
+	CXXFLAGS="-Wno-error" ./waf configure --build-profile=optimized --enable-examples --enable-mpi
+else
+	CXXFLAGS="-Wno-error" ./waf configure --build-profile=optimized --enable-examples
+fi
+
+echo 'Rebuilding NS3, please wait!'
+./waf

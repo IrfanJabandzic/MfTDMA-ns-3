@@ -1,0 +1,14 @@
+#!/bin/bash
+#analyze slots logs
+
+awk -F ":" '{print$1}' slots_log$1.txt | sed -r '/^A/ d' > slots_analyzed$1.data
+awk -F ":" '{print$2}' slots_log$1.txt | sed -r '/^\s*$/ d' | awk -F " " '{print$1}' | awk -F "=" '{print$2}' > slots_analyzed_t1.data
+
+paste slots_analyzed$1.data slots_analyzed_t1.data > slots_analyzed_t2.data
+mv slots_analyzed_t2.data slots_analyzed$1.data
+
+awk -F ":" '{print$2}' slots_log$1.txt | sed -r '/^\s*$/ d' | awk -F " " '{print$2}' | awk -F "=" '{print$2}' > slots_analyzed_t1.data
+
+paste slots_analyzed$1.data slots_analyzed_t1.data > slots_analyzed_t2.data
+mv slots_analyzed_t2.data slots_analyzed$1.data
+rm slots_analyzed_t1.data

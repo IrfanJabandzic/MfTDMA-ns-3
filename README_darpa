@@ -1,0 +1,29 @@
+NS3 installation:
+
+1. Run ./ns3_install
+2. Copy 'darpa' folder to 'ns-3.27/src' folder
+3. Copy 'darpa-simulation.cc' to 'ns-3.27/scratch' folder
+4. Copy 'ns3_update', 'ns3_run' and 'ns3_analyze' to 'ns-3.27' folder
+5. Copy 'ns3_plot' and 'analyze_slots' to 'ns-3.27' folder (OPTIONAL)
+6. Run ./ns3_update
+7. Open 'ns-3.27/waf-tools/clang_compilation_database.py' and in function 'write_compilation_database' after:
+	'except IOError:
+		root = []'
+   	add next:
+	'except ValueError:
+		root = []'
+
+Note: After every iteration of step 2., step 6. is probably required!
+
+NS3 run simulations:
+
+1. Open ns3_run script and modify parameters at the start of the script according to the requirements.
+2. Run ./ns3_run n
+3. Wait for simulations to finish.
+4. Run ./ns3_analyze n
+5. Run ./ns3_plot n (OPTIONAL)
+   where n is the number of simulations
+6. Run ./analyze_slots n (OPTIONAL)
+   where n is the number of simulation  
+
+All results are generated in 'results' folder

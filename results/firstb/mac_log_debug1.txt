@@ -1,0 +1,76 @@
+Waf: Entering directory `/home/irfan/workspace/bake/source/ns-3.27/build'
+Waf: Leaving directory `/home/irfan/workspace/bake/source/ns-3.27/build'
+Build commands will be stored in build/compile_commands.json
+'build' finished successfully (7.573s)
+Node start at time 3
+Node start at time 4
+Node start at time 4
+Node start at time 3
+Node start at time 4
+3.557: Max slots registered=2
+Slot allocation count=1
+Slot removal count=0
+3.828: Max slots registered=4
+Slot allocation count=2
+Slot removal count=0
+4.31: Max slots registered=6
+Slot allocation count=3
+Slot removal count=0
+4.557: Max slots registered=8
+Slot allocation count=5
+Slot removal count=0
+4.592: Max slots registered=10
+Slot allocation count=6
+Slot removal count=0
+5.009: Max slots registered=12
+Slot allocation count=7
+Slot removal count=0
+6.31: Max slots registered=20
+Slot allocation count=10
+Slot removal count=0
+8.007: Max slots registered=22
+Slot allocation count=11
+Slot removal count=0
+8.315: Max slots registered=26
+Slot allocation count=13
+Slot removal count=0
+8.811: Max slots registered=28
+Slot allocation count=14
+Slot removal count=0
+9.016: Max slots registered=30
+Slot allocation count=15
+Slot removal count=0
+11.316: Max slots registered=32
+Slot allocation count=17
+Slot removal count=0
+11.558: Max slots registered=34
+Slot allocation count=18
+Slot removal count=0
+11.821: Max slots registered=36
+Slot allocation count=18
+Slot removal count=0
+12.011: Max slots registered=38
+Slot allocation count=20
+Slot removal count=0
+12.022: Max slots registered=40
+Slot allocation count=20
+Slot removal count=0
+14.323: Max slots registered=42
+Slot allocation count=21
+Slot removal count=0
+14.566: Max slots registered=46
+Slot allocation count=23
+Slot removal count=0
+15.326: Max slots registered=50
+Slot allocation count=25
+Slot removal count=0
+17.577: Max slots registered=52
+Slot allocation count=26
+Slot removal count=0
+17.82: Max slots registered=54
+Slot allocation count=28
+Slot removal count=0
+17.847: Max slots registered=56
+Slot allocation count=28
+Slot removal count=0
+Command ['/home/irfan/workspace/bake/source/ns-3.27/build/scratch/darpa-simulation', '--simulation_id=1', '--number_of_nodes=5', '--number_of_neighbors=5', '--cb_slots_count=4', '--number_of_packets=640000', '--packet_period=1250', '--max_band=80000000'] terminated with signal SIGTERM. Run it under a debugger to get more information (./waf --run <program> --command-template="gdb --args %s <args>").

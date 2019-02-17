@@ -1,0 +1,35 @@
+#!/bin/bash
+#plot ns3 script
+
+if [ $# -eq 0 ]
+then
+	number_of_simulations=1
+else
+	number_of_simulations=$1
+fi
+
+cd results
+
+i=1
+while [ $i -le $number_of_simulations ]
+do
+	cd simulation$i
+	gnuplot -persist <<-EOFMarker
+	set terminal png size 640,480
+	set output "rxI$i.png"
+	plot "rxI$i.data" using 1:2 title 'Throughput' with linespoints
+	set output "rxII$i.png"
+	plot "rxII$i.data" using 1:2 title 'Throughput' with linespoints
+	set output "rxIone$i.png"
+	plot "rxIone$i.data" using 1:2 title 'Throughput' with linespoints
+	set output "rxIIone$i.png"
+	plot "rxIIone$i.data" using 1:2 title 'Throughput' with linespoints
+	exit
+	EOFMarker
+
+	((i++))
+	cd ..
+done
+
+echo "Plotting done!"
+

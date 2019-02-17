@@ -1,0 +1,41 @@
+#!/bin/bash
+
+number_of_nodes=2
+number_of_neighbors=2
+number_of_packets=$((800*800))
+packet_period=1250
+number_of_channels=16
+cb_slots_count=4
+mpi=0
+
+max_band=$(($number_of_channels*5000000))
+
+if [ $# -eq 0 ]
+then
+	number_of_simulations=1
+else
+	number_of_simulations=$1
+fi
+
+i=1
+
+if [ $mpi -eq 0 ]
+then
+	while [ $i -le $number_of_simulations ]
+	do
+		echo Simulation number: $i
+		#./waf --run "darpa-simulation --simulation_id=$i" > "mac_log_debug$i.txt" 2>&1 &
+		./waf --run "darpa-simulation --simulation_id=$i --number_of_nodes=$number_of_nodes --number_of_neighbors=$number_of_neighbors --cb_slots_count=$cb_slots_count --number_of_packets=$number_of_packets --packet_period=$packet_period --max_band=$max_band" > "mac_log_debug$i.txt" 2>&1 &
+		((i++))
+	done
+
+	echo All simulations running!
+else
+	echo Core number: $number_of_simulations
+	#./waf --run "darpa-simulation --simulation_id=$i" > "mac_log_debug$i.txt" 2>&1 &
+	mpirun -np $number_of_simulations ./waf --run "darpa-simulation --simulation_id=$i --use_mpi --number_of_nodes=$number_of_nodes --number_of_neighbors=$number_of_neighbors --cb_slots_count=$cb_slots_count --number_of_packets=$number_of_packets --packet_period=$packet_period --max_band=$max_band" > "mac_log_debug$i.txt" 2>&1 &
+
+	echo Simulation running!
+fi
+
+
