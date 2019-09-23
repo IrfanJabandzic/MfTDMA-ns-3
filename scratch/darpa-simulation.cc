@@ -53,7 +53,7 @@ static uint64_t last_rx_timestamp_one = 0, last_ip_rx_one = 0;
 #endif
 
 //#define SIMULATE_MOBILITY
-#define SIMULATE_EXPOSED_NODE
+//#define SIMULATE_EXPOSED_NODE
 //#define SIMULATE_NODE_ENTERS_NETWORK
 
 NS_LOG_COMPONENT_DEFINE ("DarpaSimulation");

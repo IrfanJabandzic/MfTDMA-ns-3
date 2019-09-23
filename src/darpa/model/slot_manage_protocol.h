@@ -13,7 +13,7 @@
 
 #define SLOT_ALLOCATION_UPGRADE
 
-#define SLOT_ALLOCATION_EXPOSED_NODE
+//#define SLOT_ALLOCATION_EXPOSED_NODE
 
 #define MAX_SUGGESTED_SLOTS 15 //Maximum suggestion of slots supported
 #define MAX_NUMBER_PROPOSED_SLOTS 10 //Todo CHECK with Maxim if he agrees to put that to 6-8

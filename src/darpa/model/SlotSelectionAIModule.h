@@ -14,7 +14,7 @@
 
 namespace ns3 {
 
-#define SLOT_ALLOCATION_EXPOSED_NODE
+//#define SLOT_ALLOCATION_EXPOSED_NODE
 //#define OPTIMIZE_SPECTRUM_USAGE
 
 class MFTDMAMacNetDevice;

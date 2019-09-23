@@ -15,8 +15,8 @@
 
 namespace ns3 {
 
-#define MULTIHOP
-#define SIMULATE_EXPOSED_NODE
+//#define MULTIHOP
+//#define SIMULATE_EXPOSED_NODE
 
 class Packet;
 class MFTDMAMacNetDevice;
