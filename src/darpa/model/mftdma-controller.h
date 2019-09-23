@@ -15,6 +15,9 @@ namespace ns3 {
 
 //#define ENABLE_IMPROVED_NEIGHBOR_REPORT
 
+//#define SIMULATE_NODE_ENTERS_NETWORK
+#define NODE_ENTERS_NETWORK_TIME 200
+
 class MFTDMAMac;
 class DarpaWirelessChannel;
 class RandomSlotSelection;
@@ -41,6 +44,7 @@ public:
 	Ptr<RandomSlotSelection> GetSlotSelection (void) const;
 	void SetSlotSelection (Ptr<RandomSlotSelection> slot_selection);
 
+  int16_t GetNodeID (Mac48Address node);
   void process_other_MAC(void);
   void process_other_slot_selection(void);
   void tx_MAC(void);
@@ -53,6 +57,7 @@ public:
 
   void start_mobility_event(void);
   void stop_mobility_event(void);
+  void node_enters_system_event(void);
   void MFTDMAControllerSetNeighbors(uint16_t neighbors);
 
   void print_table_event(void);

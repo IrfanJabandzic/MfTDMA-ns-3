@@ -30,8 +30,8 @@ public:
 
 	void neighbour_table_timeout_update();
 	void neighbour_table_manual_update(mac_index_t mac);
-	uint16_t neighbour_table_get_size() const { return table_size; }
-	//uint16_t neighbour_table_get_size() const { return m_neighbors - 1; }
+	//uint16_t neighbour_table_get_size() const { return table_size; }
+	uint16_t neighbour_table_get_size() const { return m_neighbors - 1; }
 
 private:
 

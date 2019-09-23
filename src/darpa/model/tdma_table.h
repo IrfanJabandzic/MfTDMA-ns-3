@@ -125,6 +125,10 @@ public:
 	bool check_specific_slot_exists_from(mac_address_t remote, uint8_t channel, uint8_t slot);
 	std::pair<uint8_t, slot_reference*> get_broadcast_slots();
 	bool table_get_active_slots(std::vector<std::pair<channel_t, slot_number_t>> &slots);
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+	bool table_get_active_slots_mode(std::vector<std::pair<channel_t, slot_number_t>> &slots, std::vector<SLOT_MODE> &slots_mode);
+	SLOT_MODE get_slot_mode(uint8_t channel, uint8_t slot);
+#endif
 	bool table_get_active_slots_more(std::vector<std::pair<std::pair<channel_t, slot_number_t>, std::pair<TDMA_slot::tdma_slot_type, uint16_t>>> &slots);
 
 	table_operation_status test_table();

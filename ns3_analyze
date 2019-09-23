@@ -22,6 +22,10 @@ fi
 final_time=0
 max_slots=0
 slot_allocation=0
+slot_tried_allocation=0
+slot_allocation_duration_average=0
+slot_allocation_duration_min=4294967295
+slot_allocation_duration_max=0
 slot_removal=0
 ip_tx=0
 ip_rx=0
@@ -73,6 +77,7 @@ do
 		final_time=$(($final_time+$(tac mac_log$i.txt | awk "!flag; /Max slots registered/ { flag = 1 }; " | tac | grep 'Max\ slots\ registered' | awk -F\. '{print $1}')))
 		max_slots=$(($max_slots+$(tac mac_log$i.txt | awk "!flag; /Max slots registered/ { flag = 1 }; " | tac | awk -F "=" '/Max slots registered/ {print $2}')))
 		slot_allocation=$(($slot_allocation+$(tac mac_log$i.txt | awk "!flag; /Slot allocation count/ { flag = 1 }; " | tac | awk -F "=" '/Slot allocation count/ {print $2}')))
+		slot_tried_allocation=$(($slot_tried_allocation+$(tac mac_log$i.txt | awk "!flag; /Slot allocation tried count/ { flag = 1 }; " | tac | awk -F "=" '/Slot allocation tried count/ {print $2}')))
 		slot_removal=$(($slot_removal+$(tac mac_log$i.txt | awk "!flag; /Slot removal count/ { flag = 1 }; " | tac | awk -F "=" '/Slot removal count/ {print $2}')))
 	fi
 	ip_tx=$(($ip_tx+$(grep 'IP\ Tx' mac_log$i.txt | awk -F "=" '/IP Tx/ {print $2}')))
@@ -89,6 +94,11 @@ do
 	mac_entered_count=$(($mac_entered_count+$(grep 'MAC\ Entered\ count' mac_log$i.txt | awk -F "=" '/MAC Entered count/ {print $2}')))
 	mac_retr_control_packets_count=$(($mac_retr_control_packets_count+$(grep 'MAC\ Retr\.\ control\ packets\ count' mac_log$i.txt | awk -F "=" '/MAC Retr. control packets count/ {print $2}')))
 	mac_retr_data_packets_count=$(($mac_retr_data_packets_count+$(grep 'MAC\ Retr\.\ data\ packets\ count' mac_log$i.txt | awk -F "=" '/MAC Retr. data packets count/ {print $2}')))
+	slot_allocation_duration_average=$(($slot_allocation_duration_average+$(grep 'Slot\ allocation\ duration\ average' mac_log$i.txt | awk -F "=" '/Slot allocation duration average/ {print $2}')))
+	slot_allocation_duration_min_local=$(grep 'Slot\ allocation\ duration\ min' mac_log$i.txt | awk -F "=" '/Slot allocation duration min/ {print $2}')	
+	slot_allocation_duration_min=$(($slot_allocation_duration_min<$slot_allocation_duration_min_local?$slot_allocation_duration_min:$slot_allocation_duration_min_local))
+	slot_allocation_duration_max_local=$(grep 'Slot\ allocation\ duration\ max' mac_log$i.txt | awk -F "=" '/Slot allocation duration max/ {print $2}')
+	slot_allocation_duration_max=$(($slot_allocation_duration_max>$slot_allocation_duration_max_local?$slot_allocation_duration_max:$slot_allocation_duration_max_local))
 	channel_send_count=$(($channel_send_count+$(grep 'Channel\ Send\ count' mac_log$i.txt | awk -F "=" '/Channel Send count/ {print $2}')))
 	channel_drop_control_count=$(($channel_drop_control_count+$(grep 'Channel\ Drop\ control\ count' mac_log$i.txt | awk -F "=" '/Channel Drop control count/ {print $2}')))
 	channel_drop_data_count=$(($channel_drop_data_count+$(grep 'Channel\ Drop\ data\ count' mac_log$i.txt | awk -F "=" '/Channel Drop data count/ {print $2}')))
@@ -117,6 +127,7 @@ printf "Number of simulations: $i\n" >> mac_log.txt
 printf "Final time average: $(($final_time/$i)).$(($final_time%$i*100/$i))\n" >> mac_log.txt
 printf "Max slots registered average: $(($max_slots/$i)).$(($max_slots%$i*100/$i))\n" >> mac_log.txt
 printf "Slot allocation count average: $(($slot_allocation/$i)).$(($slot_allocation%$i*100/$i))\n" >> mac_log.txt
+printf "Slot allocation tried count average: $(($slot_tried_allocation/$i)).$(($slot_tried_allocation%$i*100/$i))\n" >> mac_log.txt
 printf "Slot removal count average: $(($slot_removal/$i)).$(($slot_removal%$i*100/$i))\n" >> mac_log.txt
 printf "IP Tx average: $(($ip_tx/$i)).$(($ip_tx%$i*100/$i))\n" >> mac_log.txt
 printf "IP Rx average: $(($ip_rx/$i)).$(($ip_rx%$i*100/$i))\n" >> mac_log.txt
@@ -132,6 +143,9 @@ printf "MAC Timeout Drop count average: $(($mac_timeout_drop_count/$i)).$(($mac_
 printf "MAC Entered count average: $(($mac_entered_count/$i)).$(($mac_entered_count%$i*100/$i))\n" >> mac_log.txt
 printf "MAC Retr. control packets count average: $(($mac_retr_control_packets_count/$i)).$(($mac_retr_control_packets_count%$i*100/$i))\n" >> mac_log.txt
 printf "MAC Retr. data packets count average: $(($mac_retr_data_packets_count/$i)).$(($mac_retr_data_packets_count%$i*100/$i))\n" >> mac_log.txt
+printf "Slot allocation duration average average: $(($slot_allocation_duration_average/$i)).$(($slot_allocation_duration_average%$i*100/$i))\n" >> mac_log.txt
+printf "Slot allocation duration min: $slot_allocation_duration_min\n" >> mac_log.txt
+printf "Slot allocation duration max: $slot_allocation_duration_max\n" >> mac_log.txt
 printf "Channel Send count average: $(($channel_send_count/$i)).$(($channel_send_count%$i*100/$i))\n" >> mac_log.txt
 printf "Channel Drop control count average: $(($channel_drop_control_count/$i)).$(($channel_drop_control_count%$i*100/$i))\n" >> mac_log.txt
 printf "Channel Drop data count average: $(($channel_drop_data_count/$i)).$(($channel_drop_data_count%$i*100/$i))\n" >> mac_log.txt

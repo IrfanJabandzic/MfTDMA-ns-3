@@ -175,6 +175,9 @@ DarpaWirelessChannel::CheckCollisionDropPackets (uint32_t &packets_dropped)
 	uint8_t slot_type = m_queue[0].slot_type;
 	slot_number_t slot_number = m_queue[0].slot_number;
 	Mac48Address from = m_queue[0].from;
+#ifdef SIMULATE_EXPOSED_NODE
+	Mac48Address to = m_queue[0].to;
+#endif
 
 	for(uint16_t i = 0; i < m_interference_slots.size(); i++)
 	{
@@ -191,14 +194,23 @@ DarpaWirelessChannel::CheckCollisionDropPackets (uint32_t &packets_dropped)
 		for(uint32_t i = 1; i < m_queue.size(); i++)
 		{
 #ifdef MULTIHOP
+#ifndef	SIMULATE_EXPOSED_NODE
 			if(IsNodeInRange (from, m_queue[i].from))
+#else
+			if(IsNodeInRange (from, m_queue[i].to))
+#endif
 			{
 #endif
 				if(timestamp == m_queue[i].phy_timestamp)
 				{
 					if(tx_channel == m_queue[i].tx_channel)
 					{
+#ifdef	SIMULATE_EXPOSED_NODE
+					if(IsNodeInRange (m_queue[i].from, to))
 						collision = true;
+#else
+					collision = true;
+#endif
 						m_queue.erase(m_queue.begin() + i);
 						packets_dropped++;
 						i--;
@@ -264,6 +276,18 @@ DarpaWirelessChannel::IsNodeInRange (Mac48Address node1, Mac48Address node2)
 	int16_t node1_id = GetNodeID(node1);
 	int16_t node2_id = GetNodeID(node2);
 	uint32_t nodes = m_devices.size ();
+
+#ifdef SIMULATE_EXPOSED_NODE
+	if((node1_id >= 1 && node1_id <= nodes/2) && (node2_id >= 1 && node2_id <= nodes/2))
+		return true;
+	if((node1_id > nodes/2 && node1_id <= nodes) && (node2_id > nodes/2 && node2_id <= nodes))
+		return true;
+	//if((node1_id == 2 && node2_id == 3) || (node1_id == 3 && node2_id == 2))
+	if((node1_id > (nodes/4) && node1_id <= (3*nodes/4)) && (node2_id > (nodes/4) && node2_id <= (3*nodes/4)))
+		return true;
+
+	return false;
+#endif
 
 	if(mobility_active)
 	{

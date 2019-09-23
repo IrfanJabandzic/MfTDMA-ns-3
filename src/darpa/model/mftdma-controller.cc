@@ -67,6 +67,14 @@ void MFTDMAController::MFTDMAControllerStart(uint64_t tx_start_time, uint64_t rx
   Simulator::Schedule (MilliSeconds (DISABLE_MOBILITY * 1000), &MFTDMAController::stop_mobility_event, this);
 #endif
 
+#ifdef SIMULATE_NODE_ENTERS_NETWORK
+  if(GetNodeID(m_mac->GetAddress()) == 1 || GetNodeID(m_mac->GetAddress()) == (m_channel->GetNeighbors()/4 + 1))
+	{
+  	NS_LOG_UNCOND ("Initiate clear external for node " << GetNodeID(m_mac->GetAddress()));
+  	Simulator::Schedule (MilliSeconds (NODE_ENTERS_NETWORK_TIME * 1000), &MFTDMAController::node_enters_system_event, this);
+	}
+#endif
+
 }
 
 Ptr<MFTDMAMac>
@@ -110,6 +118,16 @@ MFTDMAController::SetSlotSelection (Ptr<RandomSlotSelection> slot_selection)
 	NS_LOG_FUNCTION (this << slot_selection);
 	m_slot_selection = slot_selection;
 }
+
+inline int16_t
+MFTDMAController::GetNodeID (Mac48Address node)
+{
+	uint8_t mac_address[6];
+	node.CopyTo (mac_address);
+
+	return mac_address[4] << 8 | mac_address[5];
+}
+
 
 inline void
 MFTDMAController::process_other_MAC(void)
@@ -157,7 +175,8 @@ MFTDMAController::rx_MAC_start(void)
 	if(status == TDMA_table::NO_SLOTS_AVAILABLE)
 	{
 		NS_LOG_LOGIC("No need to change Rx channel in the superframe!\n");
-		return;
+		Simulator::Schedule (NanoSeconds (50 * 1000000), &MFTDMAController::rx_MAC_start, this);
+		//return;
 	}
 	else
 	{
@@ -277,6 +296,12 @@ void MFTDMAController::stop_mobility_event(void)
 {
   Config::SetDefault("ns3::neighbour_table::Neighbors", UintegerValue(m_neighbors));
 	m_channel->ChangeMobility(false);
+}
+
+void MFTDMAController::node_enters_system_event(void)
+{
+	NS_LOG_UNCOND ("Start clear external at time " << Simulator::Now().GetSeconds());
+	m_slot_selection->clear_external_table();
 }
 
 void MFTDMAController::MFTDMAControllerSetNeighbors(uint16_t neighbors)

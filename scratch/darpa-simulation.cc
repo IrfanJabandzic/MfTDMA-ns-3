@@ -28,7 +28,7 @@ static uint64_t ip_tx = 0, ip_rx = 0, ip_rx_one = 0, ip_drop = 0;
 static uint64_t mac_send_control_count = 0, mac_send_control_no_ack_count = 0, mac_send_control_no_ack_advertise_count = 0, mac_send_data_count = 0, mac_ack_control_count = 0, mac_ack_data_count = 0;
 static uint64_t	mac_drop_count = 0, mac_timeout_drop_count = 0, mac_entered_count = 0, mac_retr_control_count = 0, mac_retr_data_count = 0;
 static uint64_t channel_send_count = 0, channel_drop_control_count = 0, channel_drop_data_count = 0, channel_interference_control_count = 0, channel_interference_data_count = 0, channel_added_count = 0;
-static uint64_t table_tx_slots_count = 0, table_rx_slots_count = 0, max_slots_count = 0, slot_allocation_count = 0, slot_removal_count= 0;
+static uint64_t table_tx_slots_count = 0, table_rx_slots_count = 0, max_slots_count = 0, slot_allocation_tried_count = 0, slot_allocation_count = 0, slot_allocation_durations = 0, slot_allocation_duration_min = 0, slot_allocation_duration_max = 0, slot_removal_count= 0;
 
 #define NUMBER_OF_NODES 2
 #define NUMBER_OF_PACKETS 200*800
@@ -53,6 +53,8 @@ static uint64_t last_rx_timestamp_one = 0, last_ip_rx_one = 0;
 #endif
 
 //#define SIMULATE_MOBILITY
+#define SIMULATE_EXPOSED_NODE
+//#define SIMULATE_NODE_ENTERS_NETWORK
 
 NS_LOG_COMPONENT_DEFINE ("DarpaSimulation");
 
@@ -247,10 +249,12 @@ TableTxSlotsCount (Ptr<OutputStreamWrapper> stream, Ptr<OutputStreamWrapper> slo
 		max_slots_count = table_tx_slots_count + table_rx_slots_count;
 		NS_LOG_UNCOND(Simulator::Now().GetSeconds() << ": Max slots registered=" << max_slots_count);
 		NS_LOG_UNCOND("Slot allocation count=" << slot_allocation_count);
+		NS_LOG_UNCOND("Slot allocation tried count=" << slot_allocation_tried_count);
 		NS_LOG_UNCOND("Slot removal count=" << slot_removal_count);
 
 		*stream->GetStream () << Simulator::Now().GetSeconds() << ": Max slots registered=" << max_slots_count << std::endl;
 		*stream->GetStream () << "Slot allocation count=" << slot_allocation_count << std::endl;
+		*stream->GetStream () << "Slot allocation tried count=" << slot_allocation_tried_count << std::endl;
 		*stream->GetStream () << "Slot removal count=" << slot_removal_count << std::endl;
 	}
 
@@ -259,7 +263,7 @@ TableTxSlotsCount (Ptr<OutputStreamWrapper> stream, Ptr<OutputStreamWrapper> slo
 		//*slots_stream->GetStream () << Simulator::Now().GetSeconds() << ": Tx slots registered=" << table_tx_slots_count << " Rx slots registered=" << table_rx_slots_count << std::endl;
 		//*slots_stream->GetStream () << "Slot allocation count=" << slot_allocation_count << " Slot removal count=" << slot_removal_count << std::endl;
 
-		*slots_stream->GetStream () << Simulator::Now().GetSeconds() << ": Tx=" << table_tx_slots_count << " Rx=" << table_rx_slots_count << std::endl << "A=" << slot_allocation_count << " R=" << slot_removal_count << std::endl;
+		*slots_stream->GetStream () << Simulator::Now().GetSeconds() << ": Tx=" << table_tx_slots_count << " Rx=" << table_rx_slots_count << std::endl << "A=" << slot_allocation_count << " AT=" << slot_allocation_tried_count << " R=" << slot_removal_count << std::endl;
 	}
 
   //NS_LOG_UNCOND(Simulator::Now().GetSeconds() << ": Tx slots " << table_tx_slots_count);
@@ -275,10 +279,12 @@ TableRxSlotsCount (Ptr<OutputStreamWrapper> stream, Ptr<OutputStreamWrapper> slo
 		max_slots_count = table_tx_slots_count + table_rx_slots_count;
 		NS_LOG_UNCOND(Simulator::Now().GetSeconds() << ": Max slots registered=" << max_slots_count);
 		NS_LOG_UNCOND("Slot allocation count=" << slot_allocation_count);
+		NS_LOG_UNCOND("Slot allocation tried count=" << slot_allocation_tried_count);
 		NS_LOG_UNCOND("Slot removal count=" << slot_removal_count);
 
 		*stream->GetStream () << Simulator::Now().GetSeconds() << ": Max slots registered=" << max_slots_count << std::endl;
 		*stream->GetStream () << "Slot allocation count=" << slot_allocation_count << std::endl;
+		*stream->GetStream () << "Slot allocation tried count=" << slot_allocation_tried_count << std::endl;
 		*stream->GetStream () << "Slot removal count=" << slot_removal_count << std::endl;
 	}
 
@@ -287,7 +293,7 @@ TableRxSlotsCount (Ptr<OutputStreamWrapper> stream, Ptr<OutputStreamWrapper> slo
 		//*slots_stream->GetStream () << Simulator::Now().GetSeconds() << ": Tx slots registered=" << table_tx_slots_count << " Rx slots registered=" << table_rx_slots_count << std::endl;
 		//*slots_stream->GetStream () << "Slot allocation count=" << slot_allocation_count << " Slot removal count=" << slot_removal_count << std::endl;
 
-		*slots_stream->GetStream () << Simulator::Now().GetSeconds() << ": Tx=" << table_tx_slots_count << " Rx=" << table_rx_slots_count << std::endl << "A=" << slot_allocation_count << " R=" << slot_removal_count << std::endl;
+		*slots_stream->GetStream () << Simulator::Now().GetSeconds() << ": Tx=" << table_tx_slots_count << " Rx=" << table_rx_slots_count << std::endl << "A=" << slot_allocation_count << " AT=" << slot_allocation_tried_count << " R=" << slot_removal_count << std::endl;
 	}
 
   //NS_LOG_UNCOND(Simulator::Now().GetSeconds() << ": Rx slots " << table_rx_slots_count);
@@ -297,6 +303,30 @@ void
 SlotAllocationCount (uint32_t oldValue, uint32_t newValue)
 {
 	slot_allocation_count++;
+}
+
+void
+SlotAllocationTriedCount (uint32_t oldValue, uint32_t newValue)
+{
+	slot_allocation_tried_count++;
+}
+
+void
+SlotAllocationDurations (uint32_t oldValue, uint32_t newValue)
+{
+	slot_allocation_durations = newValue;
+}
+
+void
+SlotAllocationDurationMin (uint32_t oldValue, uint32_t newValue)
+{
+	slot_allocation_duration_min = newValue;
+}
+
+void
+SlotAllocationDurationMax (uint32_t oldValue, uint32_t newValue)
+{
+	slot_allocation_duration_max = newValue;
 }
 
 void
@@ -480,18 +510,25 @@ main (int argc, char *argv[])
 		{
 			if(node_count >= (systemId * (number_of_nodes/cores)) && node_count < ((systemId + 1) * (number_of_nodes/cores)))
 			{
-#ifndef	SIMULATE_MOBILITY
+#if !defined(SIMULATE_MOBILITY) && !defined(SIMULATE_EXPOSED_NODE)
 				if(node_count == (number_of_nodes - 1))
 					udpClient[node_count].SetAttribute ("RemoteAddress", AddressValue(interfaces.GetAddress (0)));
 				else
 					udpClient[node_count].SetAttribute ("RemoteAddress", AddressValue(interfaces.GetAddress (node_count + 1)));
 #else
+#ifdef SIMULATE_MOBILITY
 				if(node_count == (number_of_nodes/2 - 1))
 					udpClient[node_count].SetAttribute ("RemoteAddress", AddressValue(interfaces.GetAddress (0)));
 				else if(node_count == (number_of_nodes - 1))
 					udpClient[node_count].SetAttribute ("RemoteAddress", AddressValue(interfaces.GetAddress (number_of_nodes/2)));
 				else
 					udpClient[node_count].SetAttribute ("RemoteAddress", AddressValue(interfaces.GetAddress (node_count + 1)));
+#else
+				if((node_count < (number_of_nodes/4)) || (node_count >= (number_of_nodes/2) && node_count < (3*number_of_nodes/4)))
+					udpClient[node_count].SetAttribute ("RemoteAddress", AddressValue(interfaces.GetAddress (node_count + number_of_nodes/4)));
+				else
+					udpClient[node_count].SetAttribute ("RemoteAddress", AddressValue(interfaces.GetAddress (node_count - number_of_nodes/4)));
+#endif
 #endif
 
 				udpClient[node_count].SetAttribute ("RemotePort", UintegerValue (REMOTE_UDP_PORT));
@@ -499,11 +536,38 @@ main (int argc, char *argv[])
 				udpClient[node_count].SetAttribute ("Interval", TimeValue (MicroSeconds (packet_period)));
 				udpClient[node_count].SetAttribute ("PacketSize", UintegerValue (PACKET_SIZE));
 
+#ifdef SIMULATE_EXPOSED_NODE
+				//if(node_count >= (number_of_nodes/4) && node_count < (3*number_of_nodes/4))
+				if(node_count < (number_of_nodes/4) || node_count >= (3*number_of_nodes/4))
+				{
+					clientApps[node_count] = udpClient[node_count].Install (nodes.Get(node_count));
+					client_app_start = random_client_app_start->GetValue (2, 5);
+					//clientApps[node_count].Start(Seconds (2.0));
+#ifndef SIMULATE_NODE_ENTERS_NETWORK
+					clientApps[node_count].Start(Seconds (client_app_start));
+#else
+					//if(node_count == (number_of_nodes/4))
+					if(node_count == 0)
+						clientApps[node_count].Start(Seconds (200.0));
+					else
+						clientApps[node_count].Start(Seconds (client_app_start));
+#endif
+					clientApps[node_count].Stop(Seconds (SIMULATION_DURATION));
+				}
+#else
 				clientApps[node_count] = udpClient[node_count].Install (nodes.Get(node_count));
 				client_app_start = random_client_app_start->GetValue (2, 5);
 				//clientApps[node_count].Start(Seconds (2.0));
+#ifndef SIMULATE_NODE_ENTERS_NETWORK
 				clientApps[node_count].Start(Seconds (client_app_start));
+#else
+				if(node_count == 0)
+					clientApps[node_count].Start(Seconds (200.0));
+				else
+					clientApps[node_count].Start(Seconds (client_app_start));
+#endif
 				clientApps[node_count].Stop(Seconds (SIMULATION_DURATION));
+#endif
 
 				serverApps[node_count] = udpServer.Install (nodes.Get(node_count));
 				serverApps[node_count].Start (Seconds (1.0));
@@ -521,29 +585,63 @@ main (int argc, char *argv[])
 
 		for(uint16_t node_count = 0; node_count < number_of_nodes; node_count++)
 		{
-#ifndef	SIMULATE_MOBILITY
+#if !defined(SIMULATE_MOBILITY) && !defined(SIMULATE_EXPOSED_NODE)
 				if(node_count == (number_of_nodes - 1))
 					udpClient[node_count].SetAttribute ("RemoteAddress", AddressValue(interfaces.GetAddress (0)));
 				else
 					udpClient[node_count].SetAttribute ("RemoteAddress", AddressValue(interfaces.GetAddress (node_count + 1)));
 #else
+#ifdef SIMULATE_MOBILITY
 				if(node_count == (number_of_nodes/2 - 1))
 					udpClient[node_count].SetAttribute ("RemoteAddress", AddressValue(interfaces.GetAddress (0)));
 				else if(node_count == (number_of_nodes - 1))
 					udpClient[node_count].SetAttribute ("RemoteAddress", AddressValue(interfaces.GetAddress (number_of_nodes/2)));
 				else
 					udpClient[node_count].SetAttribute ("RemoteAddress", AddressValue(interfaces.GetAddress (node_count + 1)));
+#else
+				if((node_count < (number_of_nodes/4)) || (node_count >= (number_of_nodes/2) && node_count < (3*number_of_nodes/4)))
+					udpClient[node_count].SetAttribute ("RemoteAddress", AddressValue(interfaces.GetAddress (node_count + number_of_nodes/4)));
+				else
+					udpClient[node_count].SetAttribute ("RemoteAddress", AddressValue(interfaces.GetAddress (node_count - number_of_nodes/4)));
+#endif
 #endif
 				udpClient[node_count].SetAttribute ("RemotePort", UintegerValue (REMOTE_UDP_PORT));
 				udpClient[node_count].SetAttribute ("MaxPackets", UintegerValue (number_of_packets));
 				udpClient[node_count].SetAttribute ("Interval", TimeValue (MicroSeconds (packet_period)));
 				udpClient[node_count].SetAttribute ("PacketSize", UintegerValue (PACKET_SIZE));
 
+#ifdef SIMULATE_EXPOSED_NODE
+				//if(node_count >= (number_of_nodes/4) && node_count < (3*number_of_nodes/4))
+				if(node_count < (number_of_nodes/4) || node_count >= (3*number_of_nodes/4))
+				{
+					clientApps[node_count] = udpClient[node_count].Install (nodes.Get(node_count));
+					client_app_start = random_client_app_start->GetValue (2, 5);
+					//clientApps[node_count].Start(Seconds (2.0));
+#ifndef SIMULATE_NODE_ENTERS_NETWORK
+					clientApps[node_count].Start(Seconds (client_app_start));
+#else
+					//if(node_count == (number_of_nodes/4))
+					if(node_count == 0)
+						clientApps[node_count].Start(Seconds (200.0));
+					else
+						clientApps[node_count].Start(Seconds (client_app_start));
+#endif
+					clientApps[node_count].Stop(Seconds (SIMULATION_DURATION));
+				}
+#else
 				clientApps[node_count] = udpClient[node_count].Install (nodes.Get(node_count));
 				client_app_start = random_client_app_start->GetValue (2, 5);
 				//clientApps[node_count].Start(Seconds (2.0));
+#ifndef SIMULATE_NODE_ENTERS_NETWORK
 				clientApps[node_count].Start(Seconds (client_app_start));
+#else
+				if(node_count == 0)
+					clientApps[node_count].Start(Seconds (200.0));
+				else
+					clientApps[node_count].Start(Seconds (client_app_start));
+#endif
 				clientApps[node_count].Stop(Seconds (SIMULATION_DURATION));
+#endif
 		}
 	}
 
@@ -592,6 +690,10 @@ main (int argc, char *argv[])
   Config::ConnectWithoutContext ("/NodeList/*/DeviceList/*/$ns3::MFTDMAMacNetDevice/Mac/$ns3::MFTDMAMac/Table/$ns3::TDMA_table/RxSlotsCount", MakeBoundCallback (&TableRxSlotsCount, mac_log, slots_log));
 
   Config::ConnectWithoutContext ("/NodeList/*/DeviceList/*/$ns3::MFTDMAMacNetDevice/SlotSelection/$ns3::RandomSlotSelection/SlotAllocationCount", MakeCallback (&SlotAllocationCount));
+  Config::ConnectWithoutContext ("/NodeList/*/DeviceList/*/$ns3::MFTDMAMacNetDevice/SlotSelection/$ns3::RandomSlotSelection/SlotAllocationTriedCount", MakeCallback (&SlotAllocationTriedCount));
+  Config::ConnectWithoutContext ("/NodeList/*/DeviceList/*/$ns3::MFTDMAMacNetDevice/SlotSelection/$ns3::RandomSlotSelection/SlotAllocationDurations", MakeCallback (&SlotAllocationDurations));
+  Config::ConnectWithoutContext ("/NodeList/*/DeviceList/*/$ns3::MFTDMAMacNetDevice/SlotSelection/$ns3::RandomSlotSelection/SlotAllocationDurationMin", MakeCallback (&SlotAllocationDurationMin));
+  Config::ConnectWithoutContext ("/NodeList/*/DeviceList/*/$ns3::MFTDMAMacNetDevice/SlotSelection/$ns3::RandomSlotSelection/SlotAllocationDurationMax", MakeCallback (&SlotAllocationDurationMax));
   Config::ConnectWithoutContext ("/NodeList/*/DeviceList/*/$ns3::MFTDMAMacNetDevice/SlotSelection/$ns3::RandomSlotSelection/SlotRemovalCount", MakeCallback (&SlotRemovalCount));
 
   //Channel stats
@@ -636,6 +738,9 @@ main (int argc, char *argv[])
   NS_LOG_UNCOND("MAC Entered count=" << mac_entered_count);
   NS_LOG_UNCOND("MAC Retr. control packets count=" << mac_retr_control_count);
   NS_LOG_UNCOND("MAC Retr. data packets count=" << mac_retr_data_count);
+  NS_LOG_UNCOND("Slot allocation duration average=" << slot_allocation_durations*10/slot_allocation_count);
+  NS_LOG_UNCOND("Slot allocation duration min=" << slot_allocation_duration_min);
+  NS_LOG_UNCOND("Slot allocation duration max=" << slot_allocation_duration_max);
 
   //Channel stats
   NS_LOG_UNCOND("Channel Send count=" << channel_send_count);
@@ -667,6 +772,9 @@ main (int argc, char *argv[])
 	*mac_log->GetStream () << "MAC Entered count=" << mac_entered_count << std::endl;
 	*mac_log->GetStream () << "MAC Retr. control packets count=" << mac_retr_control_count << std::endl;
 	*mac_log->GetStream () << "MAC Retr. data packets count=" << mac_retr_data_count << std::endl;
+	*mac_log->GetStream () << "Slot allocation duration average=" << slot_allocation_durations*10/slot_allocation_count << std::endl;
+	*mac_log->GetStream () << "Slot allocation duration min=" << slot_allocation_duration_min << std::endl;
+	*mac_log->GetStream () << "Slot allocation duration max=" << slot_allocation_duration_max << std::endl;
 
 	*mac_log->GetStream () << "Channel Send count=" << channel_send_count << std::endl;
 	*mac_log->GetStream () << "Channel Drop control count=" << channel_drop_control_count << std::endl;

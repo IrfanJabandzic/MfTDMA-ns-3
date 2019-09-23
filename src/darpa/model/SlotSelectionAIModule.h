@@ -14,6 +14,9 @@
 
 namespace ns3 {
 
+#define SLOT_ALLOCATION_EXPOSED_NODE
+//#define OPTIMIZE_SPECTRUM_USAGE
+
 class MFTDMAMacNetDevice;
 
 class SlotSelectionAIModule : public Object
@@ -39,6 +42,10 @@ private:
     //Processing of broadcast usage info about external slot usage
     virtual void process_external_slot_allocated(const External_Slot_Allocation& alloc);
     virtual void process_external_slot_removed(const External_Slot_Removal& rem);
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+    virtual void process_external_slot_allocated_exposed(const External_Slot_Allocation& alloc);
+    virtual void process_external_slot_removed_exposed(const External_Slot_Removal& rem);
+#endif
 
     //Check for the different timeouts periodically
     void check_tx_proposal_timeouts();
@@ -46,6 +53,7 @@ private:
     void check_removal_timeouts();
     void check_idle_timeouts();
     void check_external_idle_timeouts();
+    void check_external_idle_timeouts_exposed();
 protected:
     //General info about the MFTDMA grid structure
     uint8_t m_slot_duration_ms;
@@ -70,8 +78,10 @@ protected:
     virtual void terminate() = 0;
     //Propose at most num_slots possible TX slots for destination mac
     virtual std::vector<Slot> propose_tx_slots(uint64_t mac, uint32_t num_slots) = 0;
+    virtual std::vector<Slot> propose_tx_slots_exposed(uint64_t mac, uint32_t num_slots) = 0;
     //Select one of the proposed RX slots for destination mac. If no slot fits: return 255,255
     virtual Slot select_rx_slot(uint64_t mac, const std::vector<Slot>& proposed) = 0;
+    virtual Slot select_rx_slot_exposed(uint64_t mac, const std::vector<Slot>& proposed) = 0;
     //All statistics messages are passed to subclass to keep track of scores and stuff
     virtual void handle_statistics(const Internal& m) = 0;
     virtual void handle_rf_monitor_info(const Internal& m) = 0;
@@ -82,6 +92,7 @@ protected:
     virtual void notify_external_slot_allocated(uint8_t timeslot_num, uint8_t frequencyslot_num, bool new_allocation) = 0;
     virtual void notify_external_slot_removed(uint8_t timeslot_num, uint8_t frequencyslot_num) = 0;
     virtual void stats_slot_removal() = 0;
+    virtual void stats_slot_allocation(uint64_t pending_tx_proposal) = 0;
 public:
     /**
      * \brief Get the type ID.
@@ -100,6 +111,8 @@ public:
 
     //Check for the different timeouts periodically
     virtual void interloop_steps();
+
+    virtual void clear_external_table() = 0;
 };
 
 }

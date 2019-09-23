@@ -13,9 +13,11 @@
 
 #define SLOT_ALLOCATION_UPGRADE
 
+#define SLOT_ALLOCATION_EXPOSED_NODE
+
 #define MAX_SUGGESTED_SLOTS 15 //Maximum suggestion of slots supported
-#define MAX_NUMBER_PROPOSED_SLOTS 4 //Todo CHECK with Maxim if he agrees to put that to 6-8
-#define MAX_USABLE_SLOTS 34 //18 //TODO make this adjustable based on SF slot count
+#define MAX_NUMBER_PROPOSED_SLOTS 10 //Todo CHECK with Maxim if he agrees to put that to 6-8
+#define MAX_USABLE_SLOTS 38 //18 //TODO make this adjustable based on SF slot count
 
 #ifndef SLOT_ALLOCATION_UPGRADE
 #define FIXED_ALLOCATE_SLOT_DELAY 3*1000000000UL
@@ -95,6 +97,9 @@ typedef struct __attribute__ ((__packed__)) {
 	slot_reference new_slot;
 	slot_action action;
 	slot_transaction_result result;
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+	SLOT_MODE mode;
+#endif
 }slot_transaction_ack_payload;
 
 //		ADVERTISE TABLE=27,
@@ -102,6 +107,9 @@ typedef struct __attribute__ ((__packed__)) {
 	mac_address_t table_owner : 48;
 	uint8_t number_of_used_slots;
 	slot_reference list_slots[MAX_USABLE_SLOTS];
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+	SLOT_MODE list_slots_mode[MAX_USABLE_SLOTS];
+#endif
 }slot_table_advertisement_payload;
 
 //MAC STATS
@@ -173,12 +181,18 @@ typedef struct {
 	uint64_t src_mac;
 	uint64_t dst_mac;
 	MFTDMA_Slot slot;
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+	SLOT_MODE mode;
+#endif
 } External_Slot_Allocation;
 
 typedef struct {
 	uint64_t src_mac;
 	uint64_t dst_mac;
 	MFTDMA_Slot slot;
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+	SLOT_MODE mode;
+#endif
 } External_Slot_Removal;
 
 typedef struct {

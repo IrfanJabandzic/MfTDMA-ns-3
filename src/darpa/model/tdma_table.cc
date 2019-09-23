@@ -2399,6 +2399,45 @@ bool TDMA_table::table_get_active_slots(std::vector<std::pair<channel_t, slot_nu
 		return true;
 }
 
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+bool TDMA_table::table_get_active_slots_mode(std::vector<std::pair<channel_t, slot_number_t>> &slots, std::vector<SLOT_MODE> &slots_mode)
+{
+	for(uint8_t i = 0; i < table_slot_count; i++)
+	{
+		for(uint8_t j = 0; j < table_channel_count; j++)
+		{
+			TDMA_slot::tdma_slot_type type = table[std::make_pair(j, i)]->get_slot_type();
+			if(type == TDMA_slot::UNICAST_SEND)
+			{
+				slots.push_back(std::make_pair(j, i));
+				slots_mode.push_back(SLOT_MODE::TX);
+			}
+			if(type == TDMA_slot::RECEIVE)
+			{
+				slots.push_back(std::make_pair(j, i));
+				slots_mode.push_back(SLOT_MODE::RX);
+			}
+		}
+	}
+
+	if(slots.size() == 0)
+		return false;
+	else
+		return true;
+}
+
+SLOT_MODE TDMA_table::get_slot_mode(uint8_t channel, uint8_t slot)
+{
+	TDMA_slot::tdma_slot_type type = table[std::make_pair(channel, slot)]->get_slot_type();
+	if(type == TDMA_slot::UNICAST_SEND)
+		return SLOT_MODE::TX;
+	else if(type == TDMA_slot::RECEIVE)
+		return SLOT_MODE::RX;
+	else
+		return SLOT_MODE::SLOT_MODE_UNKNOWN;
+}
+#endif
+
 bool TDMA_table::table_get_active_slots_more(std::vector<std::pair<std::pair<channel_t, slot_number_t>, std::pair<TDMA_slot::tdma_slot_type, uint16_t>>> &slots)
 {
 	for(uint8_t i = 0; i < table_slot_count; i++)

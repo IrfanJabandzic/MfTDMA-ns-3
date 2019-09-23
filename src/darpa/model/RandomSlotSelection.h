@@ -23,8 +23,12 @@ class RandomSlotSelection : public SlotSelectionAIModule
 {
 private:
   //Stats
+	TracedValue<uint32_t> slot_allocation_tried_count;
 	TracedValue<uint32_t> slot_allocation_count;
 	TracedValue<uint32_t> slot_removal_count;
+	TracedValue<uint32_t> slot_allocation_durations;
+	TracedValue<uint32_t> slot_allocation_duration_min;
+	TracedValue<uint32_t> slot_allocation_duration_max;
 protected:
     float m_removal_threshold;
     uint8_t m_consecutive_frames_threshold;
@@ -38,6 +42,8 @@ protected:
 
     virtual std::vector<Slot> propose_tx_slots(uint64_t mac, uint32_t num_slots);
     virtual Slot select_rx_slot(uint64_t mac, const std::vector<Slot>& proposed);
+    virtual std::vector<Slot> propose_tx_slots_exposed(uint64_t mac, uint32_t num_slots);
+    virtual Slot select_rx_slot_exposed(uint64_t mac, const std::vector<Slot>& proposed);
     virtual void handle_statistics(const Internal& m);
     virtual void handle_rf_monitor_info(const Internal& m);
     virtual void notify_slot_allocated(uint8_t timeslot_num, uint8_t frequencyslot_num);
@@ -45,6 +51,7 @@ protected:
     virtual void notify_external_slot_allocated(uint8_t timeslot_num, uint8_t frequencyslot_num, bool new_allocation);
     virtual void notify_external_slot_removed(uint8_t timeslot_num, uint8_t frequencyslot_num);
     virtual void stats_slot_removal();
+    virtual void stats_slot_allocation(uint64_t pending_tx_proposal);
 
     virtual void process_ack_statistic(const Mac_ack_stat& stat);
 public:
@@ -56,6 +63,8 @@ public:
     RandomSlotSelection();
     void RandomSlotSelectionInit(float removal_threshold, uint8_t consecutive_frames_threshold, uint8_t num_timeslots, uint8_t num_frequencyslots, uint8_t slot_duration_ms, uint32_t transaction_timeout_ms, uint32_t idle_timeout_ms, uint32_t external_idle_timeout_ms, uint64_t seed);
     virtual ~RandomSlotSelection();
+
+    virtual void clear_external_table();
 };
 
 }

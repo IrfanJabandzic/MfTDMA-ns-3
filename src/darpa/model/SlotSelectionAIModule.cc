@@ -78,7 +78,11 @@ void SlotSelectionAIModule::interloop_steps()
     //Check if idle timeouts have expired
     check_idle_timeouts();
     //Check if we have timeouts for broadcast info
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
     check_external_idle_timeouts();
+#else
+    check_external_idle_timeouts_exposed();
+#endif
 }
 
 void SlotSelectionAIModule::check_idle_timeouts()
@@ -101,6 +105,28 @@ void SlotSelectionAIModule::check_external_idle_timeouts()
             NS_LOG_LOGIC("External slot usage timed out for slot " << (uint16_t)slot.timeslot_num << "-" << (uint16_t)slot.frequencyslot_num << ". Will consider free" << (uint16_t)slot.timeslot_num << "-" << (uint16_t)slot.frequencyslot_num);
             notify_external_slot_removed(slot.timeslot_num, slot.frequencyslot_num);
             m_external_slotgrid->logTableState();
+        }
+    }
+}
+
+void SlotSelectionAIModule::check_external_idle_timeouts_exposed()
+{
+    //Don't check for external idle timeouts when disabled
+    if(m_external_idle_timeout_ms > 0) {
+        std::vector <Slot> idle = m_external_slotgrid->getIdleSlotsTx(m_external_idle_timeout_ms);
+        for (Slot slot : idle) {
+            m_external_slotgrid->setExternalSlotFreeTx(slot.timeslot_num, slot.frequencyslot_num);
+            NS_LOG_LOGIC("External slot Tx usage timed out for slot " << (uint16_t)slot.timeslot_num << "-" << (uint16_t)slot.frequencyslot_num << ". Will consider free" << (uint16_t)slot.timeslot_num << "-" << (uint16_t)slot.frequencyslot_num);
+            notify_external_slot_removed(slot.timeslot_num, slot.frequencyslot_num);
+            m_external_slotgrid->logTableStateTxRx();
+        }
+        idle.clear();
+        idle = m_external_slotgrid->getIdleSlotsRx(m_external_idle_timeout_ms);
+        for (Slot slot : idle) {
+            m_external_slotgrid->setExternalSlotFreeRx(slot.timeslot_num, slot.frequencyslot_num);
+            NS_LOG_LOGIC("External slot Rx usage timed out for slot " << (uint16_t)slot.timeslot_num << "-" << (uint16_t)slot.frequencyslot_num << ". Will consider free" << (uint16_t)slot.timeslot_num << "-" << (uint16_t)slot.frequencyslot_num);
+            notify_external_slot_removed(slot.timeslot_num, slot.frequencyslot_num);
+            m_external_slotgrid->logTableStateTxRx();
         }
     }
 }
@@ -256,7 +282,11 @@ void SlotSelectionAIModule::process_get(const Internal &m)
             NS_LOG_LOGIC("Received request for " << num_slots << " slot proposals for TX to mac " << mac);
 
             //Gather the proposed slots according to implementation
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
             std::vector<Slot> proposal = propose_tx_slots(mac, num_slots);
+#else
+            std::vector<Slot> proposal = propose_tx_slots_exposed(mac, num_slots);
+#endif
             //Send the proposal to MAC
             propose_slots(mac, proposal, m.transaction_index);
         }else{
@@ -335,7 +365,11 @@ void SlotSelectionAIModule::select_slot(uint64_t request_idx, const Proposed_Slo
     NS_LOG_LOGIC("Received " << prop.size() << " proposed RX slots for mac " << mac);
     uint64_t now = clock_get_time_ns();
     //Select a slot from the list according to the implementation
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
     Slot selected = select_rx_slot(mac, prop);
+#else
+    Slot selected = select_rx_slot_exposed(mac, prop);
+#endif
     //Set the slot to proposed state
     if(selected.timeslot_num!=255 || selected.frequencyslot_num!=255) {
         if (!m_slotgrid->setSlotPending(selected.timeslot_num, selected.frequencyslot_num, SlotState::PROPOSED_RX,
@@ -385,10 +419,18 @@ void SlotSelectionAIModule::process_set(const Internal &m)
         remove_slot(m.transaction_index, rem);
     }else if(attribute == EXTERNAL_SLOT_ALLOCATION){
         External_Slot_Allocation alloc = set.external_slot_allocation;
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
         process_external_slot_allocated(alloc);
+#else
+        process_external_slot_allocated_exposed(alloc);
+#endif
     }else if(attribute == EXTERNAL_SLOT_REMOVAL){
         External_Slot_Removal rem = set.external_slot_removal;
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
         process_external_slot_removed(rem);
+#else
+        process_external_slot_removed_exposed(rem);
+#endif
     }else if(attribute == BC_SLOTS_ANNOUNCEMENT){
         BC_Slots_Announcement ann = set.bc_slots_announcement;
         allocate_reserved_slots(m.transaction_index, ann);
@@ -435,6 +477,7 @@ void SlotSelectionAIModule::allocate_slot(uint64_t request_idx, const Slot_Alloc
     }
 
     bool success;
+    bool success_newly_allocated = false;
     //First check if this is a slot that is already allocated with the exact same configuration. If so, I just reply OK
     if(m_slotgrid->isSlotAllocatedFor(t, f, mac) && m_slotgrid->getSlotInfo(t, f).state==state) {
         //This is the exact same slot so its a duplicate. I will just reply ok, slot is already allocated
@@ -448,6 +491,8 @@ void SlotSelectionAIModule::allocate_slot(uint64_t request_idx, const Slot_Alloc
     }else{
         //If there is a pending proposal, try to allocate. This will fail when it is still an old proposal
         success = m_slotgrid->setSlotAllocated(t, f, state, mac);
+        if(success)
+        	success_newly_allocated = true;
     }
     if(success){
         NS_LOG_INFO("Allocated slot " << (uint16_t)t << "-" << (uint16_t)f << " for mac " << mac);
@@ -457,6 +502,8 @@ void SlotSelectionAIModule::allocate_slot(uint64_t request_idx, const Slot_Alloc
 
     if(success){
         if(state == SlotState::TX){
+      			if(success_newly_allocated)
+      				stats_slot_allocation(m_pending_tx_proposals[mac]);
             //Remove the other TX proposals for this MAC
             m_slotgrid->abortTXProposals(mac);
             m_pending_tx_proposals.erase(mac);
@@ -559,6 +606,31 @@ void SlotSelectionAIModule::process_external_slot_allocated(const External_Slot_
     }
 }
 
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+void SlotSelectionAIModule::process_external_slot_allocated_exposed(const External_Slot_Allocation &alloc)
+{
+    //TODO: Create a separate field for that
+    uint64_t mac=alloc.src_mac;
+    MFTDMA_Slot slot = alloc.slot;
+    uint8_t t = slot.timeslot_num;
+    uint8_t f = slot.frequency_num;
+    SLOT_MODE mode = alloc.mode;
+    //Only process this slot when it is not one of my slots
+    if(!m_slotgrid->isSlotAllocatedForExposed(t, f, mac, mode) && !m_slotgrid->isSlotPendingForExposed(t, f, mac, mode)) {
+    		bool new_allocation = false;
+    		if(mode == SLOT_MODE::TX)
+        	new_allocation = m_external_slotgrid->setExternalSlotUsedTx(t, f);
+    		else if(mode == SLOT_MODE::RX)
+        	new_allocation = m_external_slotgrid->setExternalSlotUsedRx(t, f);
+        notify_external_slot_allocated(t, f, new_allocation);
+        NS_LOG_LOGIC("Got an external slot allocation message for slot " << (uint16_t)t << "-" << (uint16_t)f << " from MAC " << mac);
+        if (new_allocation) {
+            m_external_slotgrid->logTableStateTxRx();
+        }
+    }
+}
+#endif
+
 void SlotSelectionAIModule::process_external_slot_removed(const External_Slot_Removal &rem)
 {
     //TODO: Create a separate field for that
@@ -573,6 +645,28 @@ void SlotSelectionAIModule::process_external_slot_removed(const External_Slot_Re
         m_external_slotgrid->logTableState();
     }
 }
+
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+void SlotSelectionAIModule::process_external_slot_removed_exposed(const External_Slot_Removal &rem)
+{
+    //TODO: Create a separate field for that
+    uint64_t mac=rem.src_mac;
+    MFTDMA_Slot slot = rem.slot;
+    uint8_t t = slot.timeslot_num;
+    uint8_t f = slot.frequency_num;
+    SLOT_MODE mode = rem.mode;
+    bool change = false;
+    if(mode == SLOT_MODE::TX)
+    	change = m_external_slotgrid->setExternalSlotFreeTx(t, f);
+    else if(mode == SLOT_MODE::RX)
+  		change = m_external_slotgrid->setExternalSlotFreeRx(t, f);
+    if (change) {
+        notify_external_slot_removed(t, f);
+        NS_LOG_LOGIC("Got an external slot removal message for slot " << (uint16_t)t << "-" << (uint16_t)f << " from MAC " << mac);
+        m_external_slotgrid->logTableStateTxRx();
+    }
+}
+#endif
 
 void SlotSelectionAIModule::process_stats(const Internal &m)
 {

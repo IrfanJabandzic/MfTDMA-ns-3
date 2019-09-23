@@ -224,6 +224,7 @@ public:
      * @return Allocation status of the slot
      */
     bool isSlotAllocatedFor(uint8_t timeslot, uint8_t frequencyslot, uint64_t mac) const;
+    bool isSlotAllocatedForExposed(uint8_t timeslot, uint8_t frequencyslot, uint64_t mac, SLOT_MODE mode) const;
 
     /**
      * Checks if the slot is pending allocation for the specified target mac: i.e. either in PROPOSED_RX or PROPOSED_TX mode with target_mac==mac
@@ -233,6 +234,7 @@ public:
      * @return Allocation status of the slot
      */
     bool isSlotPendingFor(uint8_t timeslot, uint8_t frequencyslot, uint64_t mac) const;
+    bool isSlotPendingForExposed(uint8_t timeslot, uint8_t frequencyslot, uint64_t mac, SLOT_MODE mode) const;
 
     /**
      * Checks if the slot is a special reserved slot (e.g. broadcast or control)

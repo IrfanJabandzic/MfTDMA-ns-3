@@ -219,7 +219,11 @@ private:
     void TDMA_send_GET_selected_move_slot_to_AI(mac_address_t initiator, uint8_t number_of_proposals, slot_reference old_slot, slot_reference slot_table[]);
     void TDMA_send_SET_slot_allocation_to_AI(mac_address_t remote_node, SLOT_MODE mode, uint8_t channel, uint8_t timeslot );
     void TDMA_send_SET_slot_move_to_AI(mac_address_t remote_node, SLOT_MODE mode, uint8_t old_channel, uint8_t old_timeslot, uint8_t new_channel, uint8_t new_timeslot);
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
     void TDMA_send_SET_external_slot_allocation_to_AI( mac_address_t sender,mac_address_t receiver, uint8_t channel, uint8_t timeslot );
+#else
+    void TDMA_send_SET_external_slot_allocation_to_AI( mac_address_t sender,mac_address_t receiver, uint8_t channel, uint8_t timeslot, SLOT_MODE slot_mode );
+#endif
     void TDMA_send_SET_BC_slot_allocation_to_AI(std::pair<uint8_t, slot_reference*> br_slots );
 
     void TDMA_send_proposed_slots_packet(mac_address_t destination, uint8_t number__of_proposals, slot_reference slot_table[]);
@@ -232,14 +236,22 @@ private:
     //void TDMA_initiate_delete_slot (channel_t channel, slot_number_t slot_number);
 
     void TDMA_send_SET_Slot_removal_to_AI(mac_address_t initiator, uint8_t channel, uint8_t slot);
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
     void TDMA_send_SET_external_slot_removal_to_AI( mac_address_t sender,mac_address_t receiver, uint8_t channel, uint8_t timeslot );
+#else
+    void TDMA_send_SET_external_slot_removal_to_AI( mac_address_t sender,mac_address_t receiver, uint8_t channel, uint8_t timeslot, SLOT_MODE slot_mode );
+#endif
     void TDMA_send_SET_external_slot_move_to_AI( mac_address_t sender,mac_address_t receiver, uint8_t channel_old, uint8_t timeslot_old, uint8_t channel_new, uint8_t timeslot_new );
     void TDMA_send_proposed_move_slots_packet(mac_address_t remote_node, uint8_t number_of_proposals, slot_reference old_slot, slot_reference slot_table[]);
 
     void TDMA_send_remove_slot_packet(mac_address_t remote_node, uint8_t channel_old, uint8_t slot);
     //void TDMA_handle_incoming_slot_management_packet(::communicator::Application_data* packet_data);
 
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
     void TDMA_send_transaction_ack_packet(mac_address_t remote_node, slot_action action,slot_reference slot, slot_reference slot_new = {0, 0});
+#else
+    void TDMA_send_transaction_ack_packet(mac_address_t remote_node, slot_action action,slot_reference slot, SLOT_MODE slot_mode, slot_reference slot_new = {0, 0});
+#endif
     void TDMA_send_slot_table_usage_packet();
 };
 

@@ -19,6 +19,10 @@ RandomSlotSelection::GetTypeId (void)
     .SetParent<SlotSelectionAIModule> ()
     .SetGroupName("Darpa")
     .AddConstructor<RandomSlotSelection> ()
+		.AddTraceSource ("SlotAllocationTriedCount",
+										 "Slot allocation tried count.",
+										 MakeTraceSourceAccessor (&RandomSlotSelection::slot_allocation_tried_count),
+										 "ns3::TracedValueCallback::Uint32")
 		.AddTraceSource ("SlotAllocationCount",
 										 "Slot allocation count.",
 										 MakeTraceSourceAccessor (&RandomSlotSelection::slot_allocation_count),
@@ -27,6 +31,18 @@ RandomSlotSelection::GetTypeId (void)
 										 "Slot removal count.",
 										 MakeTraceSourceAccessor (&RandomSlotSelection::slot_removal_count),
 										 "ns3::TracedValueCallback::Uint32")
+		.AddTraceSource ("SlotAllocationDurations",
+										 "Slot allocation durations.",
+										 MakeTraceSourceAccessor (&RandomSlotSelection::slot_allocation_durations),
+										 "ns3::TracedValueCallback::Uint64")
+		.AddTraceSource ("SlotAllocationDurationMin",
+										 "Slot allocation durations min value.",
+										 MakeTraceSourceAccessor (&RandomSlotSelection::slot_allocation_duration_min),
+										 "ns3::TracedValueCallback::Uint32")
+		.AddTraceSource ("SlotAllocationDurationMax",
+										 "Slot allocation durations max value.",
+										 MakeTraceSourceAccessor (&RandomSlotSelection::slot_allocation_duration_max),
+										 "ns3::TracedValueCallback::Uint32")
   ;
   return tid;
 }
@@ -34,8 +50,12 @@ RandomSlotSelection::GetTypeId (void)
 RandomSlotSelection::RandomSlotSelection()
     : SlotSelectionAIModule(), m_removal_threshold(0), m_consecutive_frames_threshold(0)
 {
+	slot_allocation_tried_count = 0;
 	slot_allocation_count = 0;
 	slot_removal_count = 0;
+	slot_allocation_durations = 0;
+	slot_allocation_duration_min = 0xFFFFFFFFUL;
+	slot_allocation_duration_max = 0;
 }
 
 void RandomSlotSelection::RandomSlotSelectionInit(float removal_threshold, uint8_t consecutive_frames_threshold, uint8_t num_timeslots, uint8_t num_frequencyslots, uint8_t slot_duration_ms, uint32_t transaction_timeout_ms, uint32_t idle_timeout_ms, uint32_t external_idle_timeout_ms, uint64_t seed)
@@ -87,7 +107,7 @@ std::vector<Slot> RandomSlotSelection::propose_tx_slots(uint64_t mac, uint32_t n
         NS_LOG_LOGIC("I did not find any slots which are not used externally");
     }
     else
-  		slot_allocation_count++;
+  		slot_allocation_tried_count++;
 
     NS_LOG_LOGIC("In total, " << proposal.size() <<" slots were available. Will remove random ones until I have " << num_slots << " slots");
     //Remove random slots as long as we have too much
@@ -95,6 +115,82 @@ std::vector<Slot> RandomSlotSelection::propose_tx_slots(uint64_t mac, uint32_t n
         uint8_t pos = rand() % proposal.size();
         proposal.erase(proposal.begin()+pos);
     }
+    //Shuffle the remaining proposals
+    std::random_shuffle(proposal.begin(), proposal.end());
+    return proposal;
+}
+
+std::vector<Slot> RandomSlotSelection::propose_tx_slots_exposed(uint64_t mac, uint32_t num_slots)
+{
+    std::vector<Slot> proposal;
+    std::vector<Slot> proposal_tx;
+    //Loop over all slots and add the free ones that are not used by anyone else
+    uint8_t num_timeslots = m_slotgrid->getNumTimeslots();
+    uint8_t num_frequencyslots = m_slotgrid->getNumFrequencyslots();
+    for(uint8_t t=0; t<num_timeslots; t++){
+        if(m_slotgrid->isTimeslotAvailableTX(t)) {
+            //All slots in this timeslot are free, so can add them all
+            for (uint8_t f = 0; f < num_frequencyslots; f++) {
+#ifdef OPTIMIZE_SPECTRUM_USAGE
+                if (m_slotgrid->isSlotAvailableTX(t, f) && m_external_slotgrid->isSlotFreeRx(t, f))
+#else
+                if (m_slotgrid->isSlotAvailableTX(t, f) && m_external_slotgrid->isSlotFree(t, f))
+#endif
+              	{
+                    Slot p(t, f);
+                    proposal.push_back(p);
+                }
+            }
+        }
+    }
+
+    if(proposal.size() < num_slots)
+  	{
+			for(uint8_t t=0; t<num_timeslots; t++){
+					if(m_slotgrid->isTimeslotAvailableTX(t)) {
+							//All slots in this timeslot are free, so can add them all
+							for (uint8_t f = 0; f < num_frequencyslots; f++) {
+#ifdef OPTIMIZE_SPECTRUM_USAGE
+									if (m_slotgrid->isSlotAvailableTX(t, f) && m_external_slotgrid->isSlotFree(t, f))
+#else
+									if (m_slotgrid->isSlotAvailableTX(t, f) && m_external_slotgrid->isSlotFreeRx(t, f))
+#endif
+									{
+											Slot p(t, f);
+											proposal_tx.push_back(p);
+									}
+							}
+					}
+			}
+
+	    while(proposal_tx.size() > (num_slots - proposal.size())){
+	        uint8_t pos = rand() % proposal_tx.size();
+	        proposal_tx.erase(proposal_tx.begin()+pos);
+	    }
+
+	    for(uint8_t t=0; t<proposal_tx.size(); t++)
+	    	proposal.push_back(proposal_tx[t]);
+
+	    //If no such slots are found, select free ones, even though allocated by others
+	    if(proposal.empty()){
+	        NS_LOG_LOGIC("I did not find any slots which are not used externally");
+	    }
+	    else
+	  		slot_allocation_tried_count++;
+
+	    NS_LOG_LOGIC("In total, " << proposal.size() <<" slots were available.");
+  	}
+    else
+  	{
+			slot_allocation_tried_count++;
+	    NS_LOG_LOGIC("In total, " << proposal.size() <<" slots were available. Will remove random ones until I have " << num_slots << " slots");
+	    //Remove random slots as long as we have too much
+	    while(proposal.size() > num_slots){
+	        uint8_t pos = rand() % proposal.size();
+	        proposal.erase(proposal.begin()+pos);
+	    }
+  	}
+
     //Shuffle the remaining proposals
     std::random_shuffle(proposal.begin(), proposal.end());
     return proposal;
@@ -115,6 +211,53 @@ Slot RandomSlotSelection::select_rx_slot(uint64_t mac, const std::vector<Slot>& 
             break;
         }
     }
+    //If no such slot is found, select a free one for me
+    if(selected.timeslot_num==255 && selected.frequencyslot_num==255){
+        NS_LOG_LOGIC("All of the proposals either didn't work for me or were not free externally");
+    }
+    return selected;
+}
+
+Slot RandomSlotSelection::select_rx_slot_exposed(uint64_t mac, const std::vector<Slot>& proposed)
+{
+    Slot selected; //255,255 is the default
+    //Search for the first slot that is available for me and not used by anyone else
+    for(Slot slot : proposed){
+        uint8_t t = slot.timeslot_num;
+        uint8_t f = slot.frequencyslot_num;
+        NS_LOG_LOGIC("Will check slot " << (uint16_t)t << "-" << (uint16_t)f);
+        //The slot should still be free and RX should be allowed
+#ifdef OPTIMIZE_SPECTRUM_USAGE
+        if(m_slotgrid->isSlotAvailableRX(t, f) && m_external_slotgrid->isSlotFreeTx(t, f))
+#else
+        if(m_slotgrid->isSlotAvailableRX(t, f) && m_external_slotgrid->isSlotFree(t, f))
+#endif
+      	{
+        		selected.timeslot_num = t;
+            selected.frequencyslot_num = f;
+            break;
+        }
+    }
+
+    if(selected.timeslot_num==255 && selected.frequencyslot_num==255){
+			for(Slot slot : proposed){
+					uint8_t t = slot.timeslot_num;
+					uint8_t f = slot.frequencyslot_num;
+					NS_LOG_LOGIC("Will check slot " << (uint16_t)t << "-" << (uint16_t)f);
+					//The slot should still be free and RX should be allowed
+#ifdef OPTIMIZE_SPECTRUM_USAGE
+					if(m_slotgrid->isSlotAvailableRX(t, f) && m_external_slotgrid->isSlotFree(t, f))
+#else
+					if(m_slotgrid->isSlotAvailableRX(t, f) && m_external_slotgrid->isSlotFreeTx(t, f))
+#endif
+					{
+							selected.timeslot_num = t;
+							selected.frequencyslot_num = f;
+							break;
+					}
+			}
+    }
+
     //If no such slot is found, select a free one for me
     if(selected.timeslot_num==255 && selected.frequencyslot_num==255){
         NS_LOG_LOGIC("All of the proposals either didn't work for me or were not free externally");
@@ -232,6 +375,23 @@ void RandomSlotSelection::notify_external_slot_removed(uint8_t timeslot_num, uin
 void RandomSlotSelection::stats_slot_removal()
 {
 	slot_removal_count++;
+}
+
+void RandomSlotSelection::stats_slot_allocation(uint64_t pending_tx_proposal)
+{
+	uint64_t now = clock_get_time_ns();
+	uint32_t slot_allocation_difference = (now - pending_tx_proposal)/1000000UL;
+	slot_allocation_durations += slot_allocation_difference/10;
+	slot_allocation_count++;
+	if(slot_allocation_difference > slot_allocation_duration_max)
+		slot_allocation_duration_max = slot_allocation_difference;
+	if(slot_allocation_difference < slot_allocation_duration_min)
+		slot_allocation_duration_min = slot_allocation_difference;
+}
+
+void RandomSlotSelection::clear_external_table()
+{
+	m_external_slotgrid->clear_table();
 }
 
 void RandomSlotSelection::notify_external_slot_allocated(uint8_t timeslot_num, uint8_t frequencyslot_num, bool new_allocation)

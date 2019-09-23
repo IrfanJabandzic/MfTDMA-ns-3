@@ -378,7 +378,11 @@ MFTDMAMac::Receive (Ptr<Packet> packet, uint16_t protocol,
 #endif
 
 			for(uint8_t i=0; i<payload_p->number_of_used_slots; i++)
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
 				TDMA_send_SET_external_slot_allocation_to_AI(  payload_p->table_owner, 0, payload_p->list_slots[i].channel , payload_p->list_slots[i].timeslot);
+#else
+				TDMA_send_SET_external_slot_allocation_to_AI(  payload_p->table_owner, 0, payload_p->list_slots[i].channel , payload_p->list_slots[i].timeslot, payload_p->list_slots_mode[i]);
+#endif
 		}
 		break;
 
@@ -400,7 +404,11 @@ MFTDMAMac::Receive (Ptr<Packet> packet, uint16_t protocol,
 					temp_slot.timeslot=payload_p->relevant_slot.timeslot;
 
 					//After every set, all nodes should send a broadcast protocol ACK packet to announce the new slot to third party listeners
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
 					TDMA_send_transaction_ack_packet(source_address, delete_slot,temp_slot);
+#else
+					TDMA_send_transaction_ack_packet(source_address, delete_slot,temp_slot, SLOT_MODE::SLOT_MODE_UNKNOWN);
+#endif
 				}
 				else if(payload_p->action==move_slot)
 					TDMA_send_SET_slot_move_to_AI(source_address,SLOT_MODE::TX, payload_p->relevant_slot.channel, payload_p->relevant_slot.timeslot,
@@ -436,9 +444,17 @@ MFTDMAMac::Receive (Ptr<Packet> packet, uint16_t protocol,
 				NS_LOG_INFO("Slot in ACK doesn't include us, send it to AI to add it in our table as used");
 
 				if(payload_p->action == slot_action::add_slot)
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
 					TDMA_send_SET_external_slot_allocation_to_AI( payload_p->initiator, payload_p->remote , payload_p->relevant_slot.channel, payload_p->relevant_slot.timeslot);
+#else
+					TDMA_send_SET_external_slot_allocation_to_AI( payload_p->initiator, payload_p->remote , payload_p->relevant_slot.channel, payload_p->relevant_slot.timeslot, payload_p->mode);
+#endif
 				else if(payload_p->action == delete_slot)
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
 					TDMA_send_SET_external_slot_removal_to_AI(payload_p->initiator,payload_p->remote, payload_p->relevant_slot.channel, payload_p->relevant_slot.timeslot);
+#else
+					TDMA_send_SET_external_slot_removal_to_AI(payload_p->initiator,payload_p->remote, payload_p->relevant_slot.channel, payload_p->relevant_slot.timeslot, payload_p->mode);
+#endif
 				else
 				{
 					NS_LOG_INFO("New slot channel " << (uint16_t)payload_p->new_slot.channel << ", timeslot " << (uint16_t)payload_p->new_slot.timeslot);
@@ -956,9 +972,24 @@ void MFTDMAMac::process_AI_message(Internal &message)
 
 						//TODO check what we need to check if the slot response is ok.
 						TRANSACTION_RESULT trans_result;
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+						SLOT_MODE slot_mode = SLOT_MODE::SLOT_MODE_UNKNOWN;
+#endif
 						//Delete the slot if its in the table
-						if(superframe->check_specific_slot_exists_to((mac_address_t) slot_rem_p.mac, (uint8_t) slot_p.frequency_num, (uint8_t)slot_p.timeslot_num)||superframe->check_specific_slot_exists_from((mac_address_t) slot_rem_p.mac, (uint8_t) slot_p.frequency_num, (uint8_t)slot_p.timeslot_num))
-								superframe->remove_slot((uint8_t) slot_p.frequency_num, (uint8_t)slot_p.timeslot_num);
+						if(superframe->check_specific_slot_exists_to((mac_address_t) slot_rem_p.mac, (uint8_t) slot_p.frequency_num, (uint8_t)slot_p.timeslot_num))
+						{
+							superframe->remove_slot((uint8_t) slot_p.frequency_num, (uint8_t)slot_p.timeslot_num);
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+							slot_mode = SLOT_MODE::TX;
+#endif
+						}
+						else if(superframe->check_specific_slot_exists_from((mac_address_t) slot_rem_p.mac, (uint8_t) slot_p.frequency_num, (uint8_t)slot_p.timeslot_num))
+						{
+							superframe->remove_slot((uint8_t) slot_p.frequency_num, (uint8_t)slot_p.timeslot_num);
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+							slot_mode = SLOT_MODE::RX;
+#endif
+						}
 						else
 							NS_LOG_ERROR("ERROR: Slot to be removed, not allocated in our table");
 							//NS_LOG_ERROR("ERROR: Slot to be removed, not allocated in our table, " << imes->set().slot_removal().DebugString());
@@ -972,7 +1003,11 @@ void MFTDMAMac::process_AI_message(Internal &message)
 						temp_slot.timeslot=(uint8_t)slot_p.timeslot_num;
 
 						//After every set slot removal, the node should send a broadcast protocol ACK packet to announce the deleted slot to third party listener
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
 						TDMA_send_transaction_ack_packet((mac_address_t) slot_rem_p.mac, delete_slot,temp_slot);
+#else
+						TDMA_send_transaction_ack_packet((mac_address_t) slot_rem_p.mac, delete_slot,temp_slot, slot_mode);
+#endif
 
 						//Create a set_r message to respond back to AI
 						Internal setr_mes;
@@ -1059,10 +1094,23 @@ void MFTDMAMac::process_AI_message(Internal &message)
 
         			//Convert MODE  RX/TX to slot type
         			enum TDMA_slot::tdma_slot_type slot_type=TDMA_slot::UNUSED;
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+        			SLOT_MODE slot_mode = SLOT_MODE::SLOT_MODE_UNKNOWN;
+#endif
         			if(procedure_p->mode==SLOT_MODE::TX)
+        			{
         				slot_type = TDMA_slot::UNICAST_SEND;
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+        				slot_mode = SLOT_MODE::TX;
+#endif
+        			}
         			else if(procedure_p->mode==SLOT_MODE::RX)
+        			{
         				slot_type = TDMA_slot::RECEIVE;
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+        				slot_mode = SLOT_MODE::RX;
+#endif
+        			}
         			else
         				NS_LOG_ERROR("Got an add rx/tx slot set command with unknown mode type " << procedure_p->mode);
 
@@ -1081,7 +1129,11 @@ void MFTDMAMac::process_AI_message(Internal &message)
 				temp_slot.timeslot=slot_alloc.slot.timeslot_num;
 
 				//After every set, all nodes should send a broadcast protocol ACK packet to announce the new slot to third party listeners
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
 				TDMA_send_transaction_ack_packet(slot_alloc.mac, add_slot,temp_slot);
+#else
+				TDMA_send_transaction_ack_packet(slot_alloc.mac, add_slot,temp_slot, slot_mode);
+#endif
 	        }
         	    else{
         			//AI said it cannot add the slot, so IF this was a TX slot, send back to the other side that we couldn't allocate the slot and that he has to remove it as well
@@ -1100,6 +1152,10 @@ void MFTDMAMac::process_AI_message(Internal &message)
 
         			NS_LOG_INFO(" MAKING FINAL SLOT DELETION IN LOCAL TABLE with node " << slot_removal.mac << ", FR " << slot_removal.slot.frequency_num << ", TIME " << slot_removal.slot.timeslot_num << ",  and of rx/tx slot type " << procedure_p->mode << " that was found in our tables as active");
 
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+        			SLOT_MODE slot_mode = superframe->get_slot_mode((uint8_t) slot_removal.slot.frequency_num, (uint8_t) slot_removal.slot.timeslot_num);
+#endif
+
         			//Delete here the slot, ai is OK
 				superframe->remove_slot( (uint8_t) slot_removal.slot.frequency_num, (uint8_t) slot_removal.slot.timeslot_num);
 
@@ -1109,7 +1165,11 @@ void MFTDMAMac::process_AI_message(Internal &message)
 				temp_slot.timeslot=slot_removal.slot.timeslot_num;
 
 				//After every set slot removal, the node should send a broadcast protocol ACK packet to announce the deleted slot to third party listener
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
 				TDMA_send_transaction_ack_packet(slot_removal.mac, delete_slot,temp_slot);
+#else
+				TDMA_send_transaction_ack_packet(slot_removal.mac, delete_slot,temp_slot, slot_mode);
+#endif
         		}
         		//Else do nothing
         	}
@@ -1151,7 +1211,11 @@ void MFTDMAMac::process_AI_message(Internal &message)
 				new_slot.timeslot=slot_move.new_slot.timeslot_num;
 
 				//After every set slot move, the node should send a broadcast protocol ACK packet to announce the move operation to third party listener
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
 				TDMA_send_transaction_ack_packet(slot_move.mac, move_slot, old_slot, new_slot);
+#else
+				TDMA_send_transaction_ack_packet(slot_move.mac, move_slot, old_slot, SLOT_MODE::SLOT_MODE_UNKNOWN, new_slot);
+#endif
         		}
         		else
         		{
@@ -1218,7 +1282,8 @@ uint16_t MFTDMAMac::tx_MAC()
 			timestamp_t current_timestamp = clock_get_time_ns();
 			//TODO tighten the error gap
 			//TODO do we drop the packets, or send them anyway
-			if((current_timestamp / 1000000 + 1) >= container.ctrl_info.timestamp || (current_timestamp / 1000000 + 4) < container.ctrl_info.timestamp)
+			//if((current_timestamp / 1000000 + 1) >= container.ctrl_info.timestamp || (current_timestamp / 1000000 + 4) < container.ctrl_info.timestamp)
+			if(false)
 			{
 				update_timer = true;
 				NS_LOG_ERROR("ERROR: current timestamp " << (current_timestamp / 1000000) << ", sent packet at timestamp " << container.ctrl_info.timestamp);
@@ -2358,8 +2423,11 @@ void MFTDMAMac::TDMA_send_SET_slot_move_to_AI(mac_address_t remote_node, SLOT_MO
 }
 
 //Event 6b and 9, both sides Send ACK message as a broadcast to inform all about the slot around them
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
 void MFTDMAMac::TDMA_send_transaction_ack_packet(mac_address_t remote_node, slot_action action,slot_reference slot, slot_reference slot_new){
-
+#else
+	void MFTDMAMac::TDMA_send_transaction_ack_packet(mac_address_t remote_node, slot_action action,slot_reference slot, SLOT_MODE slot_mode, slot_reference slot_new){
+#endif
 	//Create the payload container
 	std::string* slot_selected_payload = new std::string();
 
@@ -2379,6 +2447,10 @@ void MFTDMAMac::TDMA_send_transaction_ack_packet(mac_address_t remote_node, slot
 		payload.result=SUCCESS;
 	else
 		payload.result=FAIL;
+
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+	payload.mode = slot_mode;
+#endif
 
 	payload.new_slot.channel=slot_new.channel;
 	payload.new_slot.timeslot=slot_new.timeslot;
@@ -2406,7 +2478,16 @@ void MFTDMAMac::TDMA_send_transaction_ack_packet(mac_address_t remote_node, slot
 }
 
 //Event 10, if this is an external slot allocation not relevant to this node, just inform AI to add it to its table
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
 void MFTDMAMac::TDMA_send_SET_external_slot_allocation_to_AI( mac_address_t sender,mac_address_t receiver , uint8_t channel, uint8_t timeslot ){
+#else
+	void MFTDMAMac::TDMA_send_SET_external_slot_allocation_to_AI( mac_address_t sender,mac_address_t receiver , uint8_t channel, uint8_t timeslot, SLOT_MODE slot_mode ){
+#endif
+
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+		if(slot_mode == SLOT_MODE::SLOT_MODE_UNKNOWN)
+			return;
+#endif
 
 	NS_LOG_INFO("Forwarding successful slot allocation response between NODE " << sender << " and NODE " << receiver << " to AI");
 
@@ -2426,6 +2507,10 @@ void MFTDMAMac::TDMA_send_SET_external_slot_allocation_to_AI( mac_address_t send
 
 	external_slot_allocation_p.dst_mac = receiver;
 	external_slot_allocation_p.src_mac = sender;
+
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+	external_slot_allocation_p.mode = slot_mode;
+#endif
 
 	set_mes.set.external_slot_allocation = external_slot_allocation_p;
 
@@ -2512,7 +2597,16 @@ void MFTDMAMac::TDMA_send_SET_Slot_removal_to_AI(mac_address_t initiator, uint8_
 //This is done with the already defined TDMA_send_transaction_ack_packet function
 
 //Step 5: When other nodes hear the Protocol ACK they go ahead and remove the slot also in their AI by issuing a SET external_slot_removal message to AI
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
 void MFTDMAMac::TDMA_send_SET_external_slot_removal_to_AI( mac_address_t sender,mac_address_t receiver, uint8_t channel, uint8_t timeslot ){
+#else
+	void MFTDMAMac::TDMA_send_SET_external_slot_removal_to_AI( mac_address_t sender,mac_address_t receiver, uint8_t channel, uint8_t timeslot, SLOT_MODE slot_mode ){
+#endif
+
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+		if(slot_mode == SLOT_MODE::SLOT_MODE_UNKNOWN)
+			return;
+#endif
 
 	NS_LOG_INFO("Forwarding external slot removal protocol ACK between NODE " << sender << " and NODE " << receiver << " to AI");
 
@@ -2531,6 +2625,10 @@ void MFTDMAMac::TDMA_send_SET_external_slot_removal_to_AI( mac_address_t sender,
 
 	external_slot_removal_p.dst_mac = receiver;
 	external_slot_removal_p.src_mac = sender;
+
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+	external_slot_removal_p.mode = slot_mode;
+#endif
 
 	set_mes.set.external_slot_removal = external_slot_removal_p;
 
@@ -2663,13 +2761,24 @@ void MFTDMAMac::TDMA_send_slot_table_usage_packet(){
 	memset(payload.list_slots, 0, sizeof(payload.list_slots));
 
 	std::vector<std::pair<channel_t, slot_number_t>> slots;
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+	std::vector<SLOT_MODE> slots_mode;
+#endif
 
 #ifdef ENABLE_IMPROVED_NEIGHBOR_REPORT
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
 	superframe->table_get_active_slots(slots);
+#else
+	superframe->table_get_active_slots_mode(slots, slots_mode);
+#endif
 
 	if(true){
 #else
+#ifndef SLOT_ALLOCATION_EXPOSED_NODE
 	if(superframe->table_get_active_slots(slots)){
+#else
+	if(superframe->table_get_active_slots_mode(slots, slots_mode)){
+#endif
 #endif
 
 		NS_LOG_INFO(" We are using " << slots.size() << " RX-TX slots");
@@ -2679,6 +2788,9 @@ void MFTDMAMac::TDMA_send_slot_table_usage_packet(){
 		for(uint8_t i=0; i<slots.size(); i++){
 			payload.list_slots[i].channel=slots[i].first;
 			payload.list_slots[i].timeslot=slots[i].second;
+#ifdef SLOT_ALLOCATION_EXPOSED_NODE
+			payload.list_slots_mode[i]=slots_mode[i];
+#endif
 		}
 		//Copy payload into std::string buffer
 		const char* payload_str = (const char*)&payload;

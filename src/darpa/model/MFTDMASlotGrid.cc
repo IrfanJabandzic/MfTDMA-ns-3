@@ -367,6 +367,41 @@ bool MFTDMASlotGrid::isSlotPendingFor(uint8_t timeslot, uint8_t frequencyslot, u
     return (m_slot_info[timeslot][frequencyslot].state==SlotState::PROPOSED_TX || m_slot_info[timeslot][frequencyslot].state==SlotState::PROPOSED_RX) && m_slot_info[timeslot][frequencyslot].target_mac == mac;
 }
 
+bool MFTDMASlotGrid::isSlotAllocatedForExposed(uint8_t timeslot, uint8_t frequencyslot, uint64_t mac, SLOT_MODE mode) const
+{
+    if(timeslot >= m_num_timeslots || frequencyslot >= m_num_frequencyslots){
+        NS_LOG_ERROR("ERROR: Defined out of bounds timeslot " << (uint16_t)timeslot << "-" << (uint16_t)frequencyslot << "! Bounds are " << (uint16_t)m_num_timeslots << "-" << (uint16_t)m_num_frequencyslots << ". Undefined behavior now!!");
+        return false;
+    }
+
+    if(isSlotAllocated(timeslot, frequencyslot) && m_slot_info[timeslot][frequencyslot].target_mac == mac)
+  	{
+    	if((m_slot_info[timeslot][frequencyslot].state == SlotState::TX && mode == SLOT_MODE::RX) || (m_slot_info[timeslot][frequencyslot].state == SlotState::RX && mode == SLOT_MODE::TX))
+    		return true;
+    	else
+    		return false;
+  	}
+    else
+    	return false;
+}
+
+bool MFTDMASlotGrid::isSlotPendingForExposed(uint8_t timeslot, uint8_t frequencyslot, uint64_t mac, SLOT_MODE mode) const
+{
+    if(timeslot >= m_num_timeslots || frequencyslot >= m_num_frequencyslots){
+        NS_LOG_ERROR("ERROR: Defined out of bounds timeslot " << (uint16_t)timeslot << "-" << (uint16_t)frequencyslot << "! Bounds are " << (uint16_t)m_num_timeslots << "-" << (uint16_t)m_num_frequencyslots << ". Undefined behavior now!!");
+        return false;
+    }
+    if((m_slot_info[timeslot][frequencyslot].state==SlotState::PROPOSED_TX || m_slot_info[timeslot][frequencyslot].state==SlotState::PROPOSED_RX) && m_slot_info[timeslot][frequencyslot].target_mac == mac)
+  	{
+  		if((m_slot_info[timeslot][frequencyslot].state == SlotState::PROPOSED_TX && mode == SLOT_MODE::RX) || (m_slot_info[timeslot][frequencyslot].state == SlotState::PROPOSED_RX && mode == SLOT_MODE::TX))
+  			return true;
+  		else
+  			return false;
+  	}
+    else
+    	return false;
+}
+
 bool MFTDMASlotGrid::isSlotReserved(uint8_t timeslot, uint8_t frequencyslot) const
 {
     if(timeslot >= m_num_timeslots || frequencyslot >= m_num_frequencyslots){
