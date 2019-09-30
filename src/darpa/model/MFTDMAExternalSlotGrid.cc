@@ -285,7 +285,7 @@ void MFTDMAExternalSlotGrid::clear_table()
 
 void MFTDMAExternalSlotGrid::logTableState() const
 {
-    printUsage();
+    /*printUsage();
     NS_LOG_DEBUG("Will print the current external table state");
     for(uint8_t f=m_num_frequencyslots; f>=1; f--){
         std::stringstream ss;
@@ -303,12 +303,12 @@ void MFTDMAExternalSlotGrid::logTableState() const
             }
         }
         NS_LOG_DEBUG(ss.str());
-    }
+    }*/
 }
 
 void MFTDMAExternalSlotGrid::logTableStateTxRx() const
 {
-    printUsage();
+    /*printUsage();
     NS_LOG_DEBUG("Will print the current external table state");
     for(uint8_t f=m_num_frequencyslots; f>=1; f--){
         std::stringstream ss;
@@ -330,7 +330,7 @@ void MFTDMAExternalSlotGrid::logTableStateTxRx() const
             }
         }
         NS_LOG_DEBUG(ss.str());
-    }
+    }*/
 }
 
 void MFTDMAExternalSlotGrid::printUsage() const
