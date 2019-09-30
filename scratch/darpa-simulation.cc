@@ -34,7 +34,7 @@ static uint64_t table_tx_slots_count = 0, table_rx_slots_count = 0, max_slots_co
 #define NUMBER_OF_PACKETS 200*800
 #define REMOTE_UDP_PORT 9
 #define PACKET_PERIOD 2500.0 //in microseconds 2000000.0
-#define PACKET_SIZE 100 //1024
+#define PACKET_SIZE 12 //1024
 #define SIMULATION_DURATION 820.0 //in seconds
 
 //Throughput measurement
