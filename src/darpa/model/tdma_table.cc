@@ -1827,13 +1827,13 @@ TDMA_table::table_operation_status TDMA_table::table_create_static_bc_slots(uint
 			switch (this->broadcast_slots_count) {
 			case 4:
 				this->broadcast_slots[3].channel=0;
-				this->broadcast_slots[3].timeslot=(slot_number_t)(this->get_table_slot_count()*3/4+1);
+				this->broadcast_slots[3].timeslot=(slot_number_t)(this->get_table_slot_count()*3/4);
 			case 3:
 				this->broadcast_slots[2].channel=0;
-				this->broadcast_slots[2].timeslot=(slot_number_t)(this->get_table_slot_count()*2/4+1);
+				this->broadcast_slots[2].timeslot=(slot_number_t)(this->get_table_slot_count()*2/4);
 			case 2:
 				this->broadcast_slots[1].channel=0;
-				this->broadcast_slots[1].timeslot=(slot_number_t)(this->get_table_slot_count()/4+1);
+				this->broadcast_slots[1].timeslot=(slot_number_t)(this->get_table_slot_count()/4);
 			case 1:
 				this->broadcast_slots[0].channel=0;
 				this->broadcast_slots[0].timeslot=0;
@@ -1852,13 +1852,13 @@ TDMA_table::table_operation_status TDMA_table::table_create_static_bc_slots(uint
 			switch (this->broadcast_slots_count) {
 			case 4:
 				this->broadcast_slots[3].channel=1;
-				this->broadcast_slots[3].timeslot=(slot_number_t)(this->get_table_slot_count()*3/4+1);
+				this->broadcast_slots[3].timeslot=(slot_number_t)(this->get_table_slot_count()*3/4);
 			case 3:
 				this->broadcast_slots[2].channel=1;
-				this->broadcast_slots[2].timeslot=(slot_number_t)(this->get_table_slot_count()*2/4+1);
+				this->broadcast_slots[2].timeslot=(slot_number_t)(this->get_table_slot_count()*2/4);
 			case 2:
 				this->broadcast_slots[1].channel=0;
-				this->broadcast_slots[1].timeslot=(slot_number_t)(this->get_table_slot_count()/4+1);
+				this->broadcast_slots[1].timeslot=(slot_number_t)(this->get_table_slot_count()/4);
 			case 1:
 				this->broadcast_slots[0].channel=0;
 				this->broadcast_slots[0].timeslot=0;
@@ -1877,13 +1877,13 @@ TDMA_table::table_operation_status TDMA_table::table_create_static_bc_slots(uint
 			switch (this->broadcast_slots_count) {
 			case 4:
 				this->broadcast_slots[3].channel=2;
-				this->broadcast_slots[3].timeslot=(slot_number_t)(this->get_table_slot_count()*3/4+1);
+				this->broadcast_slots[3].timeslot=(slot_number_t)(this->get_table_slot_count()*3/4);
 			case 3:
 				this->broadcast_slots[2].channel=2;
-				this->broadcast_slots[2].timeslot=(slot_number_t)(this->get_table_slot_count()*2/4+1);
+				this->broadcast_slots[2].timeslot=(slot_number_t)(this->get_table_slot_count()*2/4);
 			case 2:
 				this->broadcast_slots[1].channel=1;
-				this->broadcast_slots[1].timeslot=(slot_number_t)(this->get_table_slot_count()/4+1);
+				this->broadcast_slots[1].timeslot=(slot_number_t)(this->get_table_slot_count()/4);
 			case 1:
 				this->broadcast_slots[0].channel=0;
 				this->broadcast_slots[0].timeslot=0;
@@ -1902,11 +1902,11 @@ TDMA_table::table_operation_status TDMA_table::table_create_static_bc_slots(uint
 			switch (this->broadcast_slots_count) {
 			case 4:
 				this->broadcast_slots[3].channel=3;
-				this->broadcast_slots[3].timeslot=(slot_number_t)(this->get_table_slot_count()*3/4+1);
+				this->broadcast_slots[3].timeslot=(slot_number_t)(this->get_table_slot_count()*3/4);
 				this->broadcast_slots[2].channel=2;
-				this->broadcast_slots[2].timeslot=(slot_number_t)(this->get_table_slot_count()*2/4+1);
+				this->broadcast_slots[2].timeslot=(slot_number_t)(this->get_table_slot_count()*2/4);
 				this->broadcast_slots[1].channel=1;
-				this->broadcast_slots[1].timeslot=(slot_number_t)(this->get_table_slot_count()/4+1);
+				this->broadcast_slots[1].timeslot=(slot_number_t)(this->get_table_slot_count()/4);
 				this->broadcast_slots[0].channel=0;
 				this->broadcast_slots[0].timeslot=0;
 				break;
@@ -1942,13 +1942,13 @@ TDMA_table::table_operation_status TDMA_table::table_create_static_bc_slots(uint
 			switch (this->broadcast_slots_count) {
 			case 4:
 				this->broadcast_slots[3].channel=4;
-				this->broadcast_slots[3].timeslot=(slot_number_t)(this->get_table_slot_count()*3/4+1);
+				this->broadcast_slots[3].timeslot=(slot_number_t)(this->get_table_slot_count()*3/4);
 			case 3:
 				this->broadcast_slots[2].channel=3;
-				this->broadcast_slots[2].timeslot=(slot_number_t)(this->get_table_slot_count()*2/4+1);
+				this->broadcast_slots[2].timeslot=(slot_number_t)(this->get_table_slot_count()*2/4);
 			case 2:
 				this->broadcast_slots[1].channel=2;
-				this->broadcast_slots[1].timeslot=(slot_number_t)(this->get_table_slot_count()/4+1);
+				this->broadcast_slots[1].timeslot=(slot_number_t)(this->get_table_slot_count()/4);
 			case 1:
 				this->broadcast_slots[0].channel=0;
 				this->broadcast_slots[0].timeslot=0;
@@ -1968,13 +1968,13 @@ TDMA_table::table_operation_status TDMA_table::table_create_static_bc_slots(uint
 			switch (this->broadcast_slots_count) {
 			case 4:
 				this->broadcast_slots[3].channel=5;
-				this->broadcast_slots[3].timeslot=(slot_number_t)(this->get_table_slot_count()*3/4+1);
+				this->broadcast_slots[3].timeslot=(slot_number_t)(this->get_table_slot_count()*3/4);
 			case 3:
 				this->broadcast_slots[2].channel=3;
-				this->broadcast_slots[2].timeslot=(slot_number_t)(this->get_table_slot_count()*2/4+1);
+				this->broadcast_slots[2].timeslot=(slot_number_t)(this->get_table_slot_count()*2/4);
 			case 2:
 				this->broadcast_slots[1].channel=2;
-				this->broadcast_slots[1].timeslot=(slot_number_t)(this->get_table_slot_count()/4+1);
+				this->broadcast_slots[1].timeslot=(slot_number_t)(this->get_table_slot_count()/4);
 			case 1:
 				this->broadcast_slots[0].channel=0;
 				this->broadcast_slots[0].timeslot=0;
@@ -2005,11 +2005,11 @@ TDMA_table::table_operation_status TDMA_table::table_create_static_bc_slots(uint
 				break;
 			case 4:
 				this->broadcast_slots[3].channel=7;
-				this->broadcast_slots[3].timeslot=(slot_number_t)(this->get_table_slot_count()*3/4+1);
+				this->broadcast_slots[3].timeslot=(slot_number_t)(this->get_table_slot_count()*3/4);
 				this->broadcast_slots[2].channel=5;
-				this->broadcast_slots[2].timeslot=(slot_number_t)(this->get_table_slot_count()/2+1);
+				this->broadcast_slots[2].timeslot=(slot_number_t)(this->get_table_slot_count()/2);
 				this->broadcast_slots[1].channel=3;
-				this->broadcast_slots[1].timeslot=(slot_number_t)(this->get_table_slot_count()/4+1);
+				this->broadcast_slots[1].timeslot=(slot_number_t)(this->get_table_slot_count()/4);
 				this->broadcast_slots[0].channel=0;
 				this->broadcast_slots[0].timeslot=0;
 				break;
