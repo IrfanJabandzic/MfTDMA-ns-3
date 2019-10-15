@@ -28,7 +28,7 @@ static uint64_t ip_tx = 0, ip_rx = 0, ip_rx_one = 0, ip_drop = 0;
 static uint64_t mac_send_control_count = 0, mac_send_control_no_ack_count = 0, mac_send_control_no_ack_advertise_count = 0, mac_send_data_count = 0, mac_ack_control_count = 0, mac_ack_data_count = 0;
 static uint64_t	mac_drop_count = 0, mac_timeout_drop_count = 0, mac_entered_count = 0, mac_retr_control_count = 0, mac_retr_data_count = 0;
 static uint64_t channel_send_count = 0, channel_drop_control_count = 0, channel_drop_data_count = 0, channel_interference_control_count = 0, channel_interference_data_count = 0, channel_added_count = 0;
-static uint64_t table_tx_slots_count = 0, table_rx_slots_count = 0, max_slots_count = 0, slot_allocation_tried_count = 0, slot_allocation_count = 0, slot_allocation_durations = 0, slot_allocation_duration_min = 0, slot_allocation_duration_max = 0, slot_removal_count= 0;
+static uint64_t table_tx_slots_count = 0, table_rx_slots_count = 0, max_slots_count = 0, slot_allocation_tried_count = 0, slot_allocation_count = 0, slot_allocation_durations = 0, slot_allocation_duration_min = 0xFFFFFFFFUL, slot_allocation_duration_max = 0, slot_removal_count= 0;
 
 #define NUMBER_OF_NODES 2
 #define NUMBER_OF_PACKETS 200*800
@@ -314,19 +314,21 @@ SlotAllocationTriedCount (uint32_t oldValue, uint32_t newValue)
 void
 SlotAllocationDurations (uint32_t oldValue, uint32_t newValue)
 {
-	slot_allocation_durations = newValue;
+	slot_allocation_durations += newValue - oldValue;
 }
 
 void
 SlotAllocationDurationMin (uint32_t oldValue, uint32_t newValue)
 {
-	slot_allocation_duration_min = newValue;
+	if(newValue < slot_allocation_duration_min)
+		slot_allocation_duration_min = newValue;
 }
 
 void
 SlotAllocationDurationMax (uint32_t oldValue, uint32_t newValue)
 {
-	slot_allocation_duration_max = newValue;
+	if(newValue > slot_allocation_duration_max)
+		slot_allocation_duration_max = newValue;
 }
 
 void
