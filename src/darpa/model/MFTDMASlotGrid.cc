@@ -422,7 +422,7 @@ bool MFTDMASlotGrid::isRemovePending(uint8_t timeslot, uint8_t frequencyslot) co
 
 void MFTDMASlotGrid::logTableState() const
 {
-    printUsage();
+    /*printUsage();
     NS_LOG_DEBUG("Will print the current table state");
     for(uint8_t f=m_num_frequencyslots; f>=1; f--){
         std::stringstream ss;
@@ -448,7 +448,7 @@ void MFTDMASlotGrid::logTableState() const
             }
         }
         NS_LOG_DEBUG(ss.str());
-    }
+    }*/
 }
 
 void MFTDMASlotGrid::printUsage() const
