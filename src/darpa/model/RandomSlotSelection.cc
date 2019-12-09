@@ -192,7 +192,7 @@ std::vector<Slot> RandomSlotSelection::propose_tx_slots_exposed(uint64_t mac, ui
   	}
 
     //Shuffle the remaining proposals
-    std::random_shuffle(proposal.begin(), proposal.end());
+    //std::random_shuffle(proposal.begin(), proposal.end());
     return proposal;
 }
 
