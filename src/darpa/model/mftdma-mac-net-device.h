@@ -129,7 +129,6 @@ protected:
   virtual void DoInitialize (void);
   virtual void NotifyNewAggregate (void);
 
-private:
   Ptr<DarpaWirelessChannel> m_channel; //!< the channel the device is connected to
   Ptr<MFTDMAMac> m_mac; //!< the mac of the device
   Ptr<MFTDMAController> m_controller; //!< the mac controller of the device
@@ -164,7 +163,7 @@ private:
    * The TransmitComplete method is used internally to finish the process
    * of sending a packet out on the channel.
    */
-  void TransmitComplete (void);
+  virtual void TransmitComplete (void);
 
   bool m_linkUp; //!< Flag indicating whether or not the link is up
 

@@ -13,7 +13,7 @@
 namespace ns3 {
 
 #define TRANSACTION_TIMEOUT_MS 12000 //3000
-#define IDLE_TIMEOUT_MS 10000
+#define IDLE_TIMEOUT_MS 10000 //3000 for dynamic traffic scenario
 #define EXTERNAL_IDLE_TIMEOUT_MS 60000 //20000
 #define REMOVAL_THRESHOLD 0.8 //0.5
 #define CONSEC_FAIL_THRESHOLD 2 //4
